@@ -23,6 +23,7 @@ yarn-error.log*
 # Build
 dist/
 build/
+!scripts/build
 .next/
 .nuxt/
 out/
