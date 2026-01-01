@@ -1,0 +1,20 @@
+\usepackage{tcolorbox}
+\tcbuselibrary{most}
+\newtcolorbox{notebox}[1][]{
+	colback   = blue!5!white,
+	colframe  = blue!75!black,
+	title     = Note,
+	#1
+}
+\newtcolorbox{tipbox}[1][]{
+	colback   = green!5!white,
+	colframe  = green!75!black,
+	title     = Tip,
+	#1
+}
+\newtcolorbox{warningbox}[1][]{
+	colback   = red!5!white,
+	colframe  = red!75!black,
+	title     = Important,
+	#1
+}
