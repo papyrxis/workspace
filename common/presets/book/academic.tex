@@ -1,0 +1,44 @@
+\input{common/packages/encoding}
+\input{common/packages/fonts}
+\input{common/packages/math}
+\input{common/packages/graphics}
+\input{common/packages/tables}
+\input{common/packages/bibliography}
+
+\input{common/components/colors}
+\applyColorScheme{academic}
+
+\input{common/components/commands/base}
+\input{common/components/layout}
+\input{common/components/titles}
+\input{common/components/env}
+\input{common/components/pagestyles}
+\input{common/components/index}
+
+\makeatletter
+\def\@booktype{academic}
+\makeatother
+
+\usepackage{amsthm}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{note}[theorem]{Note}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black
+}

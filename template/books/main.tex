@@ -1,0 +1,46 @@
+\documentclass[12pt, oneside, openany]{book}
+
+\newcommand{\PDFTitle}{Book Title}
+\newcommand{\PDFTitleFront}{Short Title}
+\newcommand{\PDFCoverTitle}{TITLE}
+\newcommand{\PDFCoverDescription}{Subtitle}
+\newcommand{\PDFSubject}{Subject Area}
+\newcommand{\PDFKeywords}{keyword1, keyword2, keyword3}
+\newcommand{\PDFLOGO}{cover.pdf}
+\newcommand{\PDFURL}{https://github.com/user/repo}
+
+\input{../../common/presets/book/technical}
+
+\begin{document}
+
+\input{frontmatter/cover}
+
+\frontmatter
+\frontmatterpagenumber
+
+\input{frontmatter/title}
+
+\tableofcontents
+
+\input{frontmatter/preface}
+\input{frontmatter/acknowledgments}
+\input{frontmatter/introduction}
+
+\mainmatter
+\mainmatterpagenumber
+
+\input{parts/part01/part01}
+\input{parts/part02/part02}
+
+\backmatter
+
+\appendix
+\input{backmatter/appendix}
+
+\printbibliography[title={Bibliography}]
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\printindex
+\addcontentsline{toc}{chapter}{Index}
+
+\end{document}

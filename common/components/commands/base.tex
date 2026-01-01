@@ -1,0 +1,63 @@
+\makeatletter
+
+\newcommand{\provideCommand}[1]{%
+  \@ifundefined{#1}{}{\let#1\relax}%
+}
+
+\makeatother
+
+% Complexity notation
+\providecommand{\bigO}
+\renewcommand{\bigO}{\mathcal{O}}
+
+\providecommand{\bigOmega}
+\renewcommand{\bigOmega}{\Omega}
+
+\providecommand{\bigTheta}
+\renewcommand{\bigTheta}{\Theta}
+
+\providecommand{\littleo}
+\renewcommand{\littleo}{o}
+
+\providecommand{\littleomega}
+\renewcommand{\littleomega}{\omega}
+
+% Number sets
+\providecommand{\Naturals}
+\renewcommand{\Naturals}{\mathbb{N}}
+
+\providecommand{\Integers}
+\renewcommand{\Integers}{\mathbb{Z}}
+
+\providecommand{\Rationals}
+\renewcommand{\Rationals}{\mathbb{Q}}
+
+\providecommand{\Reals}
+\renewcommand{\Reals}{\mathbb{R}}
+
+\providecommand{\Complex}
+\renewcommand{\Complex}{\mathbb{C}}
+
+% Probability
+\providecommand{\Prob}
+\renewcommand{\Prob}{\mathbb{P}}
+
+\providecommand{\Expect}
+\renewcommand{\Expect}{\mathbb{E}}
+
+\providecommand{\Var}
+\renewcommand{\Var}{\operatorname{Var}}
+
+% Delimiters
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}
+\DeclarePairedDelimiter\norm{\lVert}{\rVert}
+
+% Set notation
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\setbuilder}[2]{\{#1 \mid #2\}}
+
+% Text formatting
+\newcommand{\keyword}[1]{\textcolor{accent}{\textbf{#1}}}
+\newcommand{\term}[1]{\textit{#1}}

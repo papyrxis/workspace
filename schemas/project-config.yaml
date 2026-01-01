@@ -1,0 +1,58 @@
+# schemas/project-config.yaml
+# User project configuration schema
+
+version: 1.0
+
+# Project metadata
+project:
+  type: ""              # book, article
+  category: ""          # technical, academic, general
+  title: ""
+  subtitle: ""
+  author: ""
+  date: ""
+  
+# Document settings
+document:
+  class: book           # book, article
+  options:
+    - 12pt
+    - oneside
+    - openany
+  
+# Style configuration
+style:
+  preset: ""            # technical-book, academic-book, ieee-article, etc.
+  
+  colors:
+    primary: "30,40,50"         # RGB
+    accent: "0,86,179"
+    subtle: "240,242,245"
+    text: "33,37,41"
+    
+  fonts:
+    main: charter              # charter, times, palatino
+    sans: helvet               # helvet, arial
+    mono: beramono            # beramono, courier
+    math: mathpazo            # mathpazo, mathdesign
+    
+  layout:
+    margin_inner: 3cm
+    margin_outer: 2.5cm
+    margin_top: 2.5cm
+    margin_bottom: 2.5cm
+    line_spacing: 1.25
+    
+# Features to enable/disable
+features:
+  toc: true
+  index: true
+  bibliography: true
+  glossary: false
+  appendix: true
+  
+# Build settings
+build:
+  engine: pdflatex         # pdflatex, xelatex, lualatex
+  bibtex: biber           # biber, bibtex
+  clean_build: true

@@ -1,0 +1,43 @@
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{charter}
+\usepackage{helvet}
+\usepackage{beramono}
+
+\input{common/packages/fonts}
+\input{common/packages/math}
+\input{common/packages/code}
+\input{common/packages/graphics}
+\input{common/packages/tables}
+\input{common/packages/bibliography}
+\input{common/packages/hyperref}
+
+\input{common/components/colors}
+\applyColorScheme{technical}
+
+\input{common/components/commands/base}
+\input{common/components/boxes}
+
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=2.5cm,
+  bottom=2.5cm,
+  left=2.5cm,
+  right=2.5cm
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  citecolor=accent,
+  urlcolor=accent
+}
+
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0.5ex}
+
+\makeatletter
+\def\@articletype{technical}
+\makeatother

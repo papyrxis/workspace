@@ -1,0 +1,55 @@
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{times}
+\usepackage{mathptmx}
+
+\input{common/packages/fonts}
+\input{common/packages/math}
+\input{common/packages/graphics}
+\input{common/packages/tables}
+\input{common/packages/bibliography}
+\input{common/packages/hyperref}
+
+\input{common/components/colors}
+\applyColorScheme{academic}
+W
+\input{common/components/commands/base}
+
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=2.5cm,
+  bottom=2.5cm,
+  left=2.5cm,
+  right=2.5cm
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+
+\usepackage{amsthm}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{note}[theorem]{Note}
+
+\makeatletter
+\def\@articletype{academic}
+\makeatother

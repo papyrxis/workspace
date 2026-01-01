@@ -1,135 +1,85 @@
 # Papyrxis Workspace
 
-A modular LaTeX template system for technical books and academic papers. Built for flexibility without the bloat.
+A modular, extensible LaTeX workspace for technical books and academic papers. Not a framework. Not a package. Just well-organized components you can use.
 
-## Quick Start
-
-```bash
-# Clone the repo
-git clone https://github.com/papyrxis/workspace.git
-cd workspace
-
-# Use as a book template
-cp -r template/books my-book
-cd my-book
-make
-
-# Or as an article
-cp -r template/article/single-column my-paper
-cd my-paper
-pdflatex main.tex
-```
-
-## What's This?
-
-A collection of LaTeX components you can mix and match. No forcing you into one way of doing things.
-
-- **Common components**: Colors, commands, layouts that work across projects
-- **Templates**: Starting points for books and articles
-- **Scripts**: Helpers for building and managing large documents
-- **Presets**: Quick configs for different document types
-
-## Using Common Components
-
-Instead of copying everything, symlink what you need:
-
-```bash
-cd your-project
-ln -s ../workspace/common .
-
-# In your main.tex
-\input{common/packages/document.tex}
-\input{common/packages/fonts.tex}
-\input{common/components/colors.tex}
-```
-
-## Building Documents
-
-### Books
-
-```bash
-cd template/books
-make              # Build full book
-make chapter-01   # Build single chapter
-make clean        # Remove build files
-```
-
-### Articles
-
-```bash
-pdflatex main.tex
-biber main
-pdflatex main.tex
-pdflatex main.tex
-```
-
-Or use the build script:
-
-```bash
-./scripts/build-article.sh main.tex
-```
-
-## Templates
-
-### Book Template
-
-Full-featured book with:
-- Front matter (cover, copyright, acknowledgments)
-- Part/chapter structure
-- Back matter (appendix, index)
-- Custom page styles
-
-### Article Templates
-
-**Single Column**: Traditional academic paper layout
-**Two Column**: Conference paper format
-
-## Customization
-
-Everything's designed to be overridden. Don't like the colors? Change them:
-
-```latex
-\definecolor{myblue}{RGB}{100, 150, 200}
-```
-
-Want different fonts? Swap them:
-
-```latex
-\usepackage{times}  % Instead of charter
-```
-
-## Documentation
-
-- [getting-started](./docs/getting-started.md) - Detailed setup guide
-- [configuration](./docs/configuration.md) - All the knobs you can turn
-- [customization](./docs/customization.md) - How to make it yours
-- [templates](./docs/templates.md) - Template details
-
-## Scripts
-
-- [build-book.sh](./scripts/build-book.sh) - Full book compilation
-- [build-article.sh](./scripts/build-article.sh) - Article compilation
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ## Philosophy
 
-Keep it simple. LaTeX is already complex enough.
+LaTeX is powerful but messy. Projects accumulate cruft. Templates multiply. Consistency suffers.
 
-- Modular components you can use or ignore
-- No magic - everything's in plain tex files
-- Works with standard LaTeX tools
-- Easy to modify without breaking everything
+This workspace provides:
+- **Modularity**: Use what you need, ignore the rest
+- **Flexibility**: Override anything easily  
+- **Standards**: IEEE, ACM, academic conventions built in
+- **Simplicity**: No magic, just organized TeX files
 
-## License
+## Features
 
-[MIT](./LICENSE) - do whatever you want with it.
+### For Books
+
+- Part/chapter structure
+- Front matter (title, preface, TOC)
+- Back matter (appendix, index, bibliography)
+- Custom page styles
+- Technical and academic presets
+- Version management
+- Watch mode for development
+
+### For Articles
+
+- Single and two-column layouts
+- IEEE/ACM formats
+- Technical and academic styles
+- Bibliography management
+- Theorem environments
+- Quick compilation
+
+### General
+
+- **Modular colors**: Define schemes, apply easily
+- **Modular commands**: Override or extend
+- **Smart layouts**: Responsive to content
+- **Build automation**: Make, watch, version
+- **Git integration**: Version from tags
+- **Documentation**: Comprehensive guides
+
+## Documentation
+
+- **[Getting Started](docs/getting-started.md)** - Complete setup guide
+- **[Configuration](docs/configuration.md)** - All configuration options
+- **[Customization](docs/customization.md)** - How to customize everything
+- **[Templates](docs/templates.md)** - Template documentation
+- **[Scripts](docs/scripts.md)** - Script reference
 
 ## Contributing
 
-Found a bug? Have a better way to do something? Pull requests welcome.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Keep changes minimal and focused. One thing per PR.
+- Bug reports
+- Feature requests
+- Documentation improvements
+- New templates
+- Code contributions
 
-## Contact
+## Support
 
-Issues: GitHub issues
-Email: bitsgenix@gmail.com
+- **Issues**: [GitHub Issues](https://github.com/papyrxis/workspace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/papyrxis/workspace/discussions)
+- **Email**: bitsgenix@gmail.com
+
+## License
+
+MIT License - see [LICENSE](LICENSE)
+
+## Credits
+
+Created and maintained by Mahdi (Genix).
+
+Built with:
+- LaTeX
+- TeX Live
+- Git
+- Bash
+- Love for typography

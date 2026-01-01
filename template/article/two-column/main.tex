@@ -1,0 +1,74 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+\input{../../../common/presets/article/ieee}
+
+\title{Article Title}
+
+\author{
+  \textbf{First Author}\\
+  Institution\\
+  email@example.com
+  \and
+  \textbf{Second Author}\\
+  Institution\\
+  email@example.com
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper presents a novel approach to solving problem X.
+Experimental results show significant improvements.
+\end{abstract}
+
+\section{Introduction}
+
+Introduction in two-column format.
+
+\section{Related Work}
+
+Literature review.
+
+\section{Methodology}
+
+\subsection{Algorithm}
+
+Algorithm description.
+
+\subsection{Analysis}
+
+Theoretical analysis.
+
+\section{Experiments}
+
+\subsection{Setup}
+
+Experimental setup.
+
+\subsection{Results}
+
+\begin{table}[h]
+\centering
+\caption{Results}
+\begin{tabular}{lcc}
+\hline
+Method & Acc & Time \\
+\hline
+Baseline & 85\% & 100ms \\
+Proposed & 92\% & 80ms \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+
+Summary and future directions.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references/main}
+
+\end{document}

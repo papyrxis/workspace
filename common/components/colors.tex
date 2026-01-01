@@ -1,23 +1,72 @@
 \usepackage{xcolor}
+\usepackage{xstring}
 
-\definecolor{algorithm_blue}{RGB}{0, 86, 179}        
-\definecolor{algorithm_lightblue}{RGB}{51, 122, 204} 
-\definecolor{algorithm_navy}{RGB}{25, 45, 85}        
-\definecolor{algorithm_gray}{RGB}{95, 99, 104}       
-\definecolor{headercolor}{RGB}{25, 45, 85}      
-\definecolor{headerrule}{RGB}{0, 86, 179}       
-\definecolor{footercolor}{RGB}{95, 99, 104}     
-\definecolor{footerrule}{RGB}{180, 185, 190}    
-\definecolor{codebg}{RGB}{248, 249, 250}        
-\definecolor{textprimary}{RGB}{33, 37, 41}    
-\definecolor{textsecondary}{RGB}{108, 117, 125} 
-\colorlet{myblue}{algorithm_blue}
-\colorlet{lightgray}{codebg}
-\colorlet{headerblue}{headercolor}
-\colorlet{footergray}{footercolor}
-\definecolor{primary}{RGB}{30, 40, 50}
-\definecolor{accent}{RGB}{80, 120, 160}
-\definecolor{subtle}{RGB}{240, 242, 245}
-\definecolor{border}{RGB}{200, 205, 210}
-\definecolor{textgray}{RGB}{60, 60, 60}
-\definecolor{codebackground}{RGB}{248, 248, 250}
+\makeatletter
+
+\newcommand{\defineColorScheme}[1]{%
+  \@namedef{colorscheme@#1}{}%
+}
+
+\newcommand{\setColorScheme}[1]{%
+  \@ifundefined{colorscheme@#1}{%
+    \PackageError{colors}{Color scheme '#1' not defined}{}%
+  }{%
+    \@nameuse{colorscheme@#1}%
+  }%
+}
+
+\newcommand{\defineSchemeColor}[3]{%
+  \expandafter\gdef\csname scheme@#1@#2\endcsname{#3}%
+}
+
+\newcommand{\useSchemeColor}[2]{%
+  \@nameuse{scheme@#1@#2}%
+}
+
+\makeatother
+
+% Default color scheme
+\defineColorScheme{default}
+\defineSchemeColor{default}{primary}{30,40,50}
+\defineSchemeColor{default}{accent}{0,86,179}
+\defineSchemeColor{default}{subtle}{240,242,245}
+\defineSchemeColor{default}{text}{33,37,41}
+\defineSchemeColor{default}{textsecondary}{108,117,125}
+\defineSchemeColor{default}{border}{200,205,210}
+\defineSchemeColor{default}{background}{255,255,255}
+\defineSchemeColor{default}{code}{248,249,250}
+
+% Technical color scheme
+\defineColorScheme{technical}
+\defineSchemeColor{technical}{primary}{25,45,85}
+\defineSchemeColor{technical}{accent}{0,86,179}
+\defineSchemeColor{technical}{subtle}{245,247,250}
+\defineSchemeColor{technical}{text}{20,20,20}
+\defineSchemeColor{technical}{textsecondary}{95,99,104}
+\defineSchemeColor{technical}{border}{180,185,190}
+\defineSchemeColor{technical}{background}{255,255,255}
+\defineSchemeColor{technical}{code}{248,249,250}
+
+% Academic color scheme
+\defineColorScheme{academic}
+\defineSchemeColor{academic}{primary}{0,0,0}
+\defineSchemeColor{academic}{accent}{70,70,70}
+\defineSchemeColor{academic}{subtle}{250,250,250}
+\defineSchemeColor{academic}{text}{0,0,0}
+\defineSchemeColor{academic}{textsecondary}{80,80,80}
+\defineSchemeColor{academic}{border}{200,200,200}
+\defineSchemeColor{academic}{background}{255,255,255}
+\defineSchemeColor{academic}{code}{245,245,245}
+
+\newcommand{\applyColorScheme}[1]{%
+  \definecolor{primary}{RGB}{\useSchemeColor{#1}{primary}}%
+  \definecolor{accent}{RGB}{\useSchemeColor{#1}{accent}}%
+  \definecolor{subtle}{RGB}{\useSchemeColor{#1}{subtle}}%
+  \definecolor{textprimary}{RGB}{\useSchemeColor{#1}{text}}%
+  \definecolor{textsecondary}{RGB}{\useSchemeColor{#1}{textsecondary}}%
+  \definecolor{border}{RGB}{\useSchemeColor{#1}{border}}%
+  \definecolor{pagebackground}{RGB}{\useSchemeColor{#1}{background}}%
+  \definecolor{codebackground}{RGB}{\useSchemeColor{#1}{code}}%
+}
+
+\applyColorScheme{default}

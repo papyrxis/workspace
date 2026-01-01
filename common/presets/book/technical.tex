@@ -1,0 +1,59 @@
+\input{common/packages/encoding}
+\input{common/packages/fonts}
+\input{common/packages/math}
+\input{common/packages/code}
+\input{common/packages/graphics}
+\input{common/packages/tables}
+\input{common/packages/bibliography}
+
+\input{common/components/colors}
+\applyColorScheme{technical}
+
+\input{common/components/commands/base}
+\input{common/components/layout}
+\input{common/components/titles}
+\input{common/components/env}
+\input{common/components/pagestyles}
+\input{common/components/index}
+
+\makeatletter
+
+\def\@booktype{technical}
+
+\newif\if@showalgorithms
+\@showalgorithmstrue
+
+\newif\if@showcode
+\@showcodetrue
+
+\newif\if@colorful
+\@colorfultrue
+
+\DeclareOption{noalgorithms}{\@showalgorithmsfalse}
+\DeclareOption{nocode}{\@showcodefalse}
+\DeclareOption{bw}{\@colorfulfalse\applyColorScheme{academic}}
+
+\ProcessOptions\relax
+
+\makeatother
+
+\if@showalgorithms
+  \usepackage{algorithm}
+  \usepackage{algpseudocode}
+\fi
+
+\if@colorful
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=accent,
+    citecolor=accent,
+    urlcolor=accent
+  }
+\else
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+  }
+\fi

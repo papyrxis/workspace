@@ -1,20 +1,77 @@
 \usepackage{tcolorbox}
 \tcbuselibrary{most}
-\newtcolorbox{notebox}[1][]{
-	colback   = blue!5!white,
-	colframe  = blue!75!black,
-	title     = Note,
-	#1
+
+\newtcolorbox{notebox}[1][]{%
+  colback=blue!5!white,
+  colframe=blue!75!black,
+  title=Note,
+  fonttitle=\bfseries,
+  sharp corners,
+  boxrule=1pt,
+  left=8pt,
+  right=8pt,
+  top=8pt,
+  bottom=8pt,
+  breakable,
+  #1
 }
-\newtcolorbox{tipbox}[1][]{
-	colback   = green!5!white,
-	colframe  = green!75!black,
-	title     = Tip,
-	#1
+
+\newtcolorbox{tipbox}[1][]{%
+  colback=green!5!white,
+  colframe=green!75!black,
+  title=Tip,
+  fonttitle=\bfseries,
+  sharp corners,
+  boxrule=1pt,
+  left=8pt,
+  right=8pt,
+  top=8pt,
+  bottom=8pt,
+  breakable,
+  #1
 }
-\newtcolorbox{warningbox}[1][]{
-	colback   = red!5!white,
-	colframe  = red!75!black,
-	title     = Important,
-	#1
+
+\newtcolorbox{warningbox}[1][]{%
+  colback=red!5!white,
+  colframe=red!75!black,
+  title=Warning,
+  fonttitle=\bfseries,
+  sharp corners,
+  boxrule=1pt,
+  left=8pt,
+  right=8pt,
+  top=8pt,
+  bottom=8pt,
+  breakable,
+  #1
+}
+
+\newtcolorbox{examplebox}[1][]{%
+  colback=yellow!5!white,
+  colframe=yellow!75!black,
+  title=Example,
+  fonttitle=\bfseries,
+  sharp corners,
+  boxrule=1pt,
+  left=8pt,
+  right=8pt,
+  top=8pt,
+  bottom=8pt,
+  breakable,
+  #1
+}
+
+\newtcolorbox{definitionbox}[1][]{%
+  colback=purple!5!white,
+  colframe=purple!75!black,
+  title=Definition,
+  fonttitle=\bfseries,
+  sharp corners,
+  boxrule=1pt,
+  left=8pt,
+  right=8pt,
+  top=8pt,
+  bottom=8pt,
+  breakable,
+  #1
 }

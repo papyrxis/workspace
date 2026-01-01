@@ -1,16 +1,16 @@
-\usepackage{listings}             % Source code highlighting
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 \lstset{
-	basicstyle      = \ttfamily\small,
-	frame           = single,
-	breaklines      = true,
-	numbers         = left,
-	numberstyle     = \tiny\color{gray},
-	keywordstyle    = \color{myblue}\bfseries,
-	commentstyle    = \color{olive},
-	stringstyle     = \color{orange},
-	backgroundcolor = \color{lightgray!20},
-	captionpos      = b,
-	escapeinside    = {(*@}{@*)},
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+  escapeinside={(*@}{@*)}
 }
-\usepackage{algorithm}             % Algorithm floats
-\usepackage{algpseudocode}         % Pseudocode environment
+
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
