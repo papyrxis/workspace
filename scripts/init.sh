@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Initialize a new Papyrxis project
+# Initialize a new Papyrxis project from templates
 
 set -euo pipefail
 
@@ -19,35 +19,43 @@ OPTIONS:
     -c, --category CAT      Category: technical|academic (default: technical)
     -n, --name NAME         Project name (default: current directory name)
     --title TITLE          Document title
-    --author AUTHOR        Author name
-    --email EMAIL          Author email
+    --author AUTHOR        Author name (default: from git config)
+    --email EMAIL          Author email (default: from git config)
+    --url URL              Project URL (auto-detected from git remote)
     -d, --dir DIR          Target directory (default: current directory)
+    --interactive          Interactive mode (prompt for all values)
     -h, --help             Show this help
 
 EXAMPLES:
-    # Initialize in current directory
-    $0 -t book -c technical --title "My Book"
+    # Quick start with auto-detection
+    $0 -t book --title "My Book"
     
-    # Initialize in new directory
-    $0 -t article --author "John Doe" -d ./my-paper
+    # Interactive mode
+    $0 -t book --interactive
+    
+    # Full specification
+    $0 -t article --author "John Doe" --email "john@example.com" --url "https://github.com/user/repo"
 
 NOTES:
     - Creates workspace.yml configuration file
-    - Sets up directory structure
-    - Generates initial main.tex
-    - Can be used with workspace as submodule
+    - Sets up directory structure from templates
+    - Detects git config for author info
+    - Detects git remote for URL
+    - Templates are populated with your values
 
 EOF
 }
 
-# Default values
+# Defaults
 TYPE=""
 CATEGORY="technical"
 NAME=""
 TITLE=""
 AUTHOR=""
 EMAIL=""
+URL=""
 TARGET_DIR="."
+INTERACTIVE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -76,9 +84,17 @@ while [[ $# -gt 0 ]]; do
             EMAIL="$2"
             shift 2
             ;;
+        --url)
+            URL="$2"
+            shift 2
+            ;;
         -d|--dir)
             TARGET_DIR="$2"
             shift 2
+            ;;
+        --interactive)
+            INTERACTIVE=true
+            shift
             ;;
         -h|--help)
             usage
@@ -90,15 +106,49 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate
+# Validate type
 [[ -z "$TYPE" ]] && error "Project type required (-t book|article)"
 [[ "$TYPE" != "book" && "$TYPE" != "article" ]] && error "Invalid type: $TYPE (must be book or article)"
 [[ "$CATEGORY" != "technical" && "$CATEGORY" != "academic" ]] && error "Invalid category: $CATEGORY"
+
+# Auto-detect from git if available
+detect_git_info() {
+    if command_exists git && git rev-parse --git-dir > /dev/null 2>&1; then
+        [[ -z "$AUTHOR" ]] && AUTHOR=$(git config user.name 2>/dev/null || echo "")
+        [[ -z "$EMAIL" ]] && EMAIL=$(git config user.email 2>/dev/null || echo "")
+        
+        if [[ -z "$URL" ]]; then
+            local remote=$(git config --get remote.origin.url 2>/dev/null || echo "")
+            if [[ -n "$remote" ]]; then
+                # Convert SSH to HTTPS
+                if [[ "$remote" =~ ^git@ ]]; then
+                    URL=$(echo "$remote" | sed 's|git@\(.*\):\(.*\)\.git|https://\1/\2|')
+                else
+                    URL="$remote"
+                fi
+            fi
+        fi
+    fi
+}
+
+detect_git_info
 
 # Set defaults
 [[ -z "$NAME" ]] && NAME=$(basename "$(realpath "$TARGET_DIR")")
 [[ -z "$TITLE" ]] && TITLE="$NAME"
 [[ -z "$AUTHOR" ]] && AUTHOR="Author Name"
+[[ -z "$EMAIL" ]] && EMAIL=""
+[[ -z "$URL" ]] && URL="https://github.com/user/$NAME"
+
+# Interactive mode
+if $INTERACTIVE; then
+    read -p "Project name [$NAME]: " input && [[ -n "$input" ]] && NAME="$input"
+    read -p "Document title [$TITLE]: " input && [[ -n "$input" ]] && TITLE="$input"
+    read -p "Author name [$AUTHOR]: " input && [[ -n "$input" ]] && AUTHOR="$input"
+    read -p "Author email [$EMAIL]: " input && [[ -n "$input" ]] && EMAIL="$input"
+    read -p "Project URL [$URL]: " input && [[ -n "$input" ]] && URL="$input"
+    read -p "Category [$CATEGORY]: " input && [[ -n "$input" ]] && CATEGORY="$input"
+fi
 
 # Create target directory
 ensure_dir "$TARGET_DIR"
@@ -106,8 +156,11 @@ cd "$TARGET_DIR"
 
 log "Initializing $TYPE project: $NAME"
 log "Category: $CATEGORY"
+log "Author: $AUTHOR"
+[[ -n "$EMAIL" ]] && log "Email: $EMAIL"
+log "URL: $URL"
 
-# Create workspace.yml
+# Generate workspace.yml
 cat > workspace.yml <<EOF
 # Papyrxis Workspace Configuration
 # Generated: $(date)
@@ -120,7 +173,7 @@ project:
   author: "$AUTHOR"
   email: "$EMAIL"
   date: "auto"
-  url: "https://github.com/user/$NAME"
+  url: "$URL"
   subject: "$CATEGORY project"
   keywords: "latex, $TYPE, $CATEGORY"
 
@@ -136,7 +189,6 @@ version:
   fallback: "dev"
 
 components:
-  - encoding
   - fonts
   - math
   - graphics
@@ -169,7 +221,6 @@ frontmatter:
   - title
   - copyright
   - preface
-  - acknowledgments
   - introduction
 
 colors:
@@ -187,100 +238,55 @@ cover:
     title_size: large
     include_subtitle: true
     include_author: true
+
+overrides:
+  components_dir: "configs"
+  allow:
+    - colors.tex
+    - commands/base.tex
+    - pagestyles.tex
+    - frontmatter/title.tex
+    - frontmatter/copyright.tex
+    - cover.tex
 EOF
 
     # Create book structure
+    log "Creating book structure from templates..."
     ensure_dir parts/part01
     ensure_dir frontmatter
     ensure_dir backmatter
     ensure_dir figures
     ensure_dir references
-    ensure_dir custom
-    load_config "workspace.yml"
-    TITLE_ESC=$(get_config "project.title" "Untitled")
-    AUTHOR_ESC=$(get_config "project.author" "Author")
-    SUBJECT_ESC=$(get_config "project.subject" "")
-    KEYWORDS_ESC=$(get_config "project.keywords" "")
-    URL_ESC=$(get_config "project.url" "")
-    echo "CONFIG TITLE: ${TITLE_ESC}"
-    echo "CONFIG AUTHOR: ${AUTHOR_ESC}"
-    echo "CONFIG SUBJECT: ${SUBJECT_ESC}"
-    echo "CONFIG KEYWORDS: ${KEYWORDS_ESC}"
-    echo "CONFIG URL: ${URL_ESC}"
-    log "Creating book structure..."
-    # Create main.tex for book
-    cat > main.tex <<EOFMAIN
-\documentclass[12pt,oneside,openany]{book}
-
-% Metadata
-\newcommand{\PDFTitle}{$TITLE_ESC}
-\newcommand{\PDFTitleFront}{$TITLE_ESC}
-\newcommand{\PDFCoverTitle}{$TITLE_ESC}
-\newcommand{\PDFSubject}{$SUBJECT_ESC}
-\newcommand{\PDFKeywords}{$KEYWORDS_ESC}
-\newcommand{\PDFAuthor}{$AUTHOR_ESC}
-\newcommand{\PDFURL}{$URL_ESC}
-
-% Import workspace components (will be synced)
-\input{.pxis/preset}
-
-\begin{document}
-
-\frontmatter
-\input{frontmatter/cover}
-\input{frontmatter/title}
-\input{frontmatter/copyright}
-
-\tableofcontents
-
-\input{frontmatter/preface}
-\input{frontmatter/acknowledgments}
-\input{frontmatter/introduction}
-
-\mainmatter
-
-\input{parts/part01/part01}
-
-\backmatter
-
-\appendix
-\input{backmatter/appendix}
-
-\printbibliography[title={Bibliography}]
-\addcontentsline{toc}{chapter}{Bibliography}
-
-\printindex
-\addcontentsline{toc}{chapter}{Index}
-
-\end{document}
-EOFMAIN
-
-    # Create initial part
-    cat > parts/part01/part01.tex <<EOFPART
-\part{Introduction}
-\label{part:part01}
-
-\begin{partintro}
-\lettrine{T}{his} is the first part of the book.
-
-Overview of what this part covers.
-\end{partintro}
-
-\chapter{First Chapter}
-\label{ch:chapter01}
-
-\begin{chapterintro}
-Introduction to the first chapter.
-\end{chapterintro}
-
-\section{Introduction}
-
-Content goes here.
-
-\section{Summary}
-
-Chapter summary.
-EOFPART
+    ensure_dir configs
+    
+    # Copy and populate template main.tex for book
+    if [[ -f "$WORKSPACE_ROOT/template/books/main.tex" ]]; then
+        sed -e "s|\\\\newcommand{\\\\PDFTitle}{.*}|\\\\newcommand{\\\\PDFTitle}{$TITLE}|" \
+            -e "s|\\\\newcommand{\\\\PDFTitleFront}{.*}|\\\\newcommand{\\\\PDFTitleFront}{$TITLE}|" \
+            -e "s|\\\\newcommand{\\\\PDFCoverTitle}{.*}|\\\\newcommand{\\\\PDFCoverTitle}{$TITLE}|" \
+            -e "s|\\\\newcommand{\\\\PDFAuthor}{.*}|\\\\newcommand{\\\\PDFAuthor}{$AUTHOR}|" \
+            -e "s|\\\\newcommand{\\\\PDFURL}{.*}|\\\\newcommand{\\\\PDFURL}{$URL}|" \
+            "$WORKSPACE_ROOT/template/books/main.tex" > main.tex
+    fi
+    
+    # Copy frontmatter templates
+    for fm in preface; do
+        if [[ -f "$WORKSPACE_ROOT/template/books/frontmatter/$fm.tex" ]]; then
+            sed -e "s/Author Name/$AUTHOR/g" \
+                -e "s|Book Title|$TITLE|g" \
+                "$WORKSPACE_ROOT/template/books/frontmatter/$fm.tex" > "frontmatter/$fm.tex"
+        fi
+    done
+    
+    # Copy part template
+    if [[ -f "$WORKSPACE_ROOT/template/books/parts/part01.tex" ]]; then
+        cp "$WORKSPACE_ROOT/template/books/parts/part01.tex" "parts/part01/part01.tex"
+    fi
+    
+    # Copy backmatter
+    if [[ -d "$WORKSPACE_ROOT/template/books/backmatter" ]]; then
+        cp -r "$WORKSPACE_ROOT/template/books/backmatter/"* backmatter/ 2>/dev/null || true
+    fi
 
 else
     # Article configuration
@@ -296,89 +302,40 @@ copyright:
   type: cc-by-sa
   year: "auto"
   holder: "$AUTHOR"
+
+overrides:
+  components_dir: "configs"
+  allow:
+    - colors.tex
+    - commands/base.tex
 EOF
 
     # Create article structure
+    log "Creating article structure from templates..."
     ensure_dir sections
     ensure_dir figures
     ensure_dir references
-    ensure_dir custom
+    ensure_dir configs
     
-    log "Creating article structure..."
+    # Determine which article template
+    TEMPLATE_DIR="$WORKSPACE_ROOT/template/article/single-column"
+    if [[ "$CATEGORY" == "academic" ]]; then
+        TEMPLATE_DIR="$WORKSPACE_ROOT/template/article/ieee"
+    fi
     
-    # Create main.tex for article
-    cat > main.tex <<'EOFMAIN'
-\documentclass[12pt,a4paper]{article}
-
-\title{\CONFIG{project.title}}
-\author{\CONFIG{project.author}}
-\date{\today}
-
-% Import workspace components (will be synced)
-\input{.pxis/preset}
-
-\addbibresource{references/main.bib}
-
-\begin{document}
-
-\maketitle
-
-\begin{abstract}
-Your abstract here.
-\end{abstract}
-
-\section{Introduction}
-
-Introduction content.
-
-\section{Methodology}
-
-Methodology description.
-
-\section{Results}
-
-Results and discussion.
-
-\section{Conclusion}
-
-Conclusion and future work.
-
-\printbibliography
-
-\end{document}
-EOFMAIN
+    # Copy and populate main.tex
+    if [[ -f "$TEMPLATE_DIR/main.tex" ]]; then
+        sed -e "s|Article Title|$TITLE|g" \
+            -e "s|Author Name|$AUTHOR|g" \
+            -e "s|email@example.com|$EMAIL|g" \
+            "$TEMPLATE_DIR/main.tex" > main.tex
+    fi
 fi
 
-# Create Makefile
-cat > Makefile <<'EOFMAKE'
-.PHONY: all build clean watch sync help
-
-WORKSPACE := workspace
-
-all: sync build
-
-sync:
-	@bash $(WORKSPACE)/scripts/sync.sh
-
-build: sync
-	@bash $(WORKSPACE)/scripts/build.sh main.tex
-
-clean:
-	@rm -rf build/
-	@find . -name "*.aux" -o -name "*.log" -o -name "*.out" \
-	   -o -name "*.toc" -o -name "*.bbl" -o -name "*.blg" | xargs rm -f
-
-watch: sync
-	@bash $(WORKSPACE)/scripts/build.sh -w main.tex
-
-help:
-	@echo "Papyrxis Workspace - Available targets:"
-	@echo "  make sync   - Sync workspace components"
-	@echo "  make build  - Build document"
-	@echo "  make watch  - Watch mode (auto-rebuild)"
-	@echo "  make clean  - Clean build artifacts"
-	@echo "  make help   - Show this help"
-EOFMAKE
+# Create Makefile (same for both)
+if [[ -f "$WORKSPACE_ROOT/template/Makefile" ]]; then
+    cp "$WORKSPACE_ROOT/template/Makefile" Makefile
+fi
 
 # Create .gitignore
 cat > .gitignore <<'EOFGITIGNORE'
@@ -398,8 +355,7 @@ build/
 *.ind
 
 # Synced workspace files (regenerated by make sync)
-workspace/preset.tex
-workspace/components/
+.pxis/
 
 # OS files
 .DS_Store
@@ -419,15 +375,13 @@ cat > README.md <<EOFREADME
 
 A $CATEGORY $TYPE project using Papyrxis workspace.
 
-## Building
+## Quick Start
 
 \`\`\`bash
 make
 \`\`\`
 
-This will:
-1. Sync workspace components based on workspace.yml
-2. Build the document with appropriate engine
+This will sync workspace components and build your document.
 
 ## Watch Mode
 
@@ -439,31 +393,59 @@ make watch
 
 ## Customization
 
-Edit \`workspace.yml\` to configure components, colors, features, etc.
+Edit \`workspace.yml\` to configure:
+- Components to include
+- Color schemes
+- Features (TOC, index, bibliography)
+- Front matter sections
+- Copyright settings
 
-To override workspace components, create files in \`custom/\` directory.
+To override workspace components, place your custom versions in \`configs/\` directory.
 
-## Version
+## Building
 
-Version is automatically generated from git tags.
+The build process:
+1. Reads your \`workspace.yml\` configuration
+2. Syncs required components to \`.pxis/\` directory
+3. Generates frontmatter (cover, copyright, etc.)
+4. Builds the final PDF
 
 ## Structure
 
 $(if [[ "$TYPE" == "book" ]]; then cat <<BOOKSTRUCT
-- \`frontmatter/\` - Front matter pages
+- \`frontmatter/\` - Front matter pages (preface, introduction, etc.)
 - \`parts/\` - Book parts and chapters
 - \`backmatter/\` - Appendices and back matter
 - \`figures/\` - Image files
 - \`references/\` - Bibliography files
+- \`configs/\` - Custom component overrides
+- \`.pxis/\` - Synced workspace files (auto-generated)
 BOOKSTRUCT
 else cat <<ARTICLESTRUCT
 - \`sections/\` - Article sections (optional)
 - \`figures/\` - Image files
 - \`references/\` - Bibliography files
+- \`configs/\` - Custom component overrides
+- \`.pxis/\` - Synced workspace files (auto-generated)
 ARTICLESTRUCT
 fi)
-- \`custom/\` - Custom component overrides
-- \`workspace/\` - Synced workspace files (auto-generated)
+
+## Version Management
+
+Version is automatically generated from git tags. Format: v{major}.{minor}.{patch}
+
+To create a version:
+\`\`\`bash
+git tag v1.0.0
+\`\`\`
+
+## Documentation
+
+See workspace/docs/ for detailed documentation:
+- getting-started.md - Complete setup guide
+- configuration.md - All configuration options
+- customization.md - How to customize everything
+- templates.md - Template documentation
 
 ## License
 
@@ -471,3 +453,24 @@ See copyright information in the document.
 EOFREADME
 
 log "Project initialized successfully!"
+info ""
+info "Next steps:"
+info "  1. Review and edit workspace.yml"
+info "  2. Run 'make' to build"
+info "  3. Run 'make watch' for development"
+info ""
+info "Files created:"
+info "  - workspace.yml (configuration)"
+info "  - main.tex (document entry point)"
+info "  - Makefile (build automation)"
+info "  - README.md (project documentation)"
+info ""
+info "Directory structure:"
+if [[ "$TYPE" == "book" ]]; then
+    info "  - parts/ (book content)"
+    info "  - frontmatter/ (preface, intro, etc.)"
+    info "  - backmatter/ (appendices)"
+fi
+info "  - figures/ (images)"
+info "  - references/ (bibliography)"
+info "  - configs/ (custom overrides)"
