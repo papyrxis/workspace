@@ -222,7 +222,6 @@ components:
   - layout
   - titles
 EOF
-fi
 
 if [[ "$TYPE" == "book" ]]; then
     cat >> workspace.yml <<EOF
@@ -390,6 +389,7 @@ EOF
             -e "s|email@example.com|$EMAIL|g" \
             "$TEMPLATE_DIR/main.tex" > main.tex
     fi
+fi
 fi
 
 # Create Makefile (same for both)
