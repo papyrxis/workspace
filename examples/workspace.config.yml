@@ -1,0 +1,105 @@
+# Papyrxis Workspace Configuration
+
+# Project metadata
+project:
+  type: book                    # book, article
+  category: technical           # technical, academic, general
+  title: "Your Book Title"
+  subtitle: "Optional Subtitle"
+  author: "Author Name"
+  email: "author@example.com"
+  date: "auto"                 # auto uses \today, or specify date
+  url: "https://github.com/user/repo"
+  subject: "Subject Area"
+  keywords: "keyword1, keyword2, keyword3"
+
+# Build configuration
+build:
+  engine: pdflatex            # pdflatex, xelatex, lualatex
+  bibtex: biber               # biber, bibtex
+  output_dir: build
+  watch_mode: true
+
+# Version management
+version:
+  source: git                         # git, manual
+  format: "v{major}.{minor}.{patch}"  # for git tags
+  fallback: "dev"                     # if no git tags
+
+# Components to include
+components:
+  - encoding
+  - fonts
+  - math
+  - graphics
+  - tables
+  - hyperref
+  - code
+  - bibliography
+  - colors
+  - layout
+  - titles
+  - pagestyles
+  - env 
+  - boxes
+  - index
+  - commands/base
+
+# Color scheme
+colors:
+  scheme: technical           # technical, academic, custom
+  # Custom colors 
+  custom:
+    primary: "30,40,50"
+    accent: "0,86,179"
+    text: "33,37,41"
+
+# Features (for books)
+features:
+  toc: true                   # Table of contents
+  index: true                 # Index generation
+  bibliography: true          # Bibliography
+  glossary: false             # Glossary
+  appendix: true              # Appendix
+
+# Front matter (for books)
+frontmatter:
+  - cover                     # PDF cover or generated
+  - title                     # Title page
+  - copyright                 # Copyright page
+  - preface                   # Preface
+  - acknowledgments           # Acknowledgments
+  - introduction              # Introduction
+
+# Copyright settings
+copyright:
+  type: cc-by-sa             # cc-by-sa, cc-by, cc-by-nc, mit, custom, none
+  year: "auto"               # auto uses current year
+  holder: "Author Name"
+  custom_text: null          # For custom license text
+
+# Cover settings (for books)
+cover:
+  type: generated            # generated, pdf, none
+  pdf_file: "cover.pdf"      # if type: pdf
+  # Generated cover settings
+  generated:
+    style: modern            # modern, classic, minimal
+    title_size: large        # small, medium, large
+    include_subtitle: true
+    include_author: true
+    background_color: "myblue!8"
+    title_color: "myblue"
+
+# Override settings
+overrides:
+  # Path to custom components
+  components_dir: "configs/"
+  # Files to override 
+  allow:
+    - colors.tex
+    - commands/base.tex
+    - pagestyles.tex
+    - frontmatter/title.tex
+    - frontmatter/copyright.tex
+    - cover.tex
