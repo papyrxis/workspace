@@ -7,7 +7,6 @@ MAIN = main
 ENGINE = pdflatex
 BIBTEX = biber
 BUILD_DIR = build
-SCRIPTS_DIR = ../../scripts
 
 LATEX_FLAGS = -output-directory=$(BUILD_DIR) -interaction=nonstopmode
 WATCH_EXCLUDE = --exclude '\.git|$(BUILD_DIR)/'
