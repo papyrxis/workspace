@@ -1,42 +1,52 @@
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+BUILD_DATE ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+
+WORKSPACE_ROOT := $(shell pwd)
+SRC_DIR := $(WORKSPACE_ROOT)/src
+
 help:
 	@echo "Papyrxis Workspace"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make help      - Show this help"
-	@echo "  make test      - Run tests"
-	@echo "  make examples  - Build example projects"
-	@echo "  make docs      - Build documentation"
-	@echo "  make clean     - Clean all build artifacts"
-	@echo "  make install   - Install scripts system-wide"
-	@echo ""
-	@echo "Project creation:"
-	@echo "  ./scripts/new-project.sh -t book -n my-book"
-	@echo "  ./scripts/new-project.sh -t article -n my-paper"
+	@echo "  make sync      - Sync workspace components"
+	@echo "  make build     - Build document"
+	@echo "  make clean     - Clean build artifacts"
+	@echo "  make watch     - Watch and rebuild on changes"
+	@echo "  make version   - Show version information"
 
-test:
-	@echo "Running tests..."
-	@bash tests/run-tests.sh
+sync:
+	@bash $(SRC_DIR)/sync.sh
 
-examples:
-	@echo "Building examples..."
-	@for ex in examples/*/; do \
-		echo "Building $$ex..."; \
-		(cd "$$ex" && make) || exit 1; \
-	done
-
-docs:
-	@echo "Building documentation..."
-	@(cd docs && make html)
+build: sync
+	@bash $(SRC_DIR)/build.sh
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
-	@find . -name "*.aux" -o -name "*.log" -o -name "*.out" | xargs rm -f
+	@rm -rf build/
+	@find . -type f \( -name "*.aux" -o -name "*.log" -o -name "*.out" \
+		-o -name "*.toc" -o -name "*.bbl" -o -name "*.blg" \
+		-o -name "*.synctex.gz" -o -name "*.fdb_latexmk" -o -name "*.fls" \
+		-o -name "*.idx" -o -name "*.ilg" -o -name "*.ind" \
+		-o -name "*.run.xml" -o -name "*.bcf" \) -delete
+	@echo "Clean complete!"
+
+watch:
+	@bash $(SRC_DIR)/build.sh -w
+
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Build date: $(BUILD_DATE)"
 
 install:
 	@echo "Installing scripts..."
-	@sudo cp scripts/*.sh /usr/local/bin/
-	@sudo chmod +x /usr/local/bin/*.sh
-	@echo "Scripts installed to /usr/local/bin/"
+	@sudo mkdir -p /usr/local/share/papyrxis
+	@sudo cp -r $(SRC_DIR)/* /usr/local/share/papyrxis/
+	@sudo cp -r common /usr/local/share/papyrxis/
+	@sudo cp -r template /usr/local/share/papyrxis/
+	@echo '#!/usr/bin/env bash' | sudo tee /usr/local/bin/papyrxis > /dev/null
+	@echo 'exec bash /usr/local/share/papyrxis/init.sh "$$@"' | sudo tee -a /usr/local/bin/papyrxis > /dev/null
+	@sudo chmod +x /usr/local/bin/papyrxis
+	@echo "Papyrxis installed to /usr/local/bin/papyrxis"
 
 .DEFAULT_GOAL := help
