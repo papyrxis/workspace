@@ -1,0 +1,116 @@
+% Professional title page for Papyrxis workspace
+\begin{titlepage}
+\centering
+
+% Background with subtle pattern
+\begin{tikzpicture}[remember picture, overlay]
+    % Gradient background
+    \shade[top color=accent!3, bottom color=accent!10, middle color=white] 
+        (current page.south west) rectangle (current page.north east);
+    
+    % Decorative corner elements
+    \draw[line width=4pt, color=accent, rounded corners=3pt, opacity=0.7] 
+        ($(current page.north west) + (0.5cm, -0.5cm)$) -- 
+        ($(current page.north west) + (3cm, -0.5cm)$) -- 
+        ($(current page.north west) + (3cm, -3cm)$);
+    
+    \draw[line width=4pt, color=accent, rounded corners=3pt, opacity=0.7] 
+        ($(current page.south east) + (-0.5cm, 0.5cm)$) -- 
+        ($(current page.south east) + (-3cm, 0.5cm)$) -- 
+        ($(current page.south east) + (-3cm, 3cm)$);
+    
+    % Subtle dot pattern
+    \foreach \x in {1,3,...,19} {
+        \foreach \y in {2,5,...,26} {
+            \node[circle, fill=accent!12, inner sep=0.6pt, opacity=0.4] 
+                at ($(current page.south west) + (\x cm, \y cm)$) {};
+        }
+    }
+\end{tikzpicture}
+
+\vspace*{4cm}
+
+% Main title with shadow effect
+\begin{tikzpicture}[baseline=(title.base)]
+    % Shadow
+    \node[opacity=0.08, scale=1.05, text=black] (shadow) at (0.1,-0.1) {
+        \fontsize{42}{48}\selectfont\bfseries\PDFTitle
+    };
+    
+    % Main title
+    \node (title) at (0,0) {
+        \fontsize{42}{48}\selectfont\bfseries\textcolor{primary}{\PDFTitle}
+    };
+\end{tikzpicture}
+
+\vspace{1.5cm}
+
+% Subtitle (if exists)
+\ifdef{\PDFSubtitle}{%
+    \ifx\PDFSubtitle\empty\else
+        {\Large\color{accent}\PDFSubtitle}
+        \vspace{1cm}
+    \fi
+}{}
+
+% Decorative separator
+\begin{tikzpicture}
+    \draw[line width=1.5pt, color=accent, opacity=0.6] (-4cm,0) -- (-1.5cm,0);
+    \node[circle, fill=accent, inner sep=2pt, opacity=0.6] at (0,0) {};
+    \draw[line width=1.5pt, color=accent, opacity=0.6] (1.5cm,0) -- (4cm,0);
+\end{tikzpicture}
+
+\vspace{2cm}
+
+% Author information
+{\large\textcolor{textsecondary}{\textit{\PDFAuthor}}}
+
+\ifdef{\PDFAuthorEmail}{%
+    \ifx\PDFAuthorEmail\empty\else
+        \vspace{0.5cm}
+        {\small\textcolor{textsecondary}{\PDFAuthorEmail}}
+    \fi
+}{}
+
+\vfill
+
+% Edition and version info
+\begin{tikzpicture}
+    \node[text width=10cm, align=center] (info) {
+        \large\textsc{\textcolor{primary}{First Edition}}
+    };
+    
+    \node[below=0.8cm of info, text=textsecondary] {
+        \textit{Version \ProjectVersion}
+    };
+    
+    % Decorative lines around edition
+    \draw[line width=2pt, color=accent, opacity=0.4, rounded corners=1pt] 
+        ($(info.west) + (-2cm, 0.2cm)$) -- ($(info.west) + (-0.2cm, 0.2cm)$);
+    \draw[line width=2pt, color=accent, opacity=0.4, rounded corners=1pt] 
+        ($(info.east) + (0.2cm, 0.2cm)$) -- ($(info.east) + (2cm, 0.2cm)$);
+\end{tikzpicture}
+
+\vspace{2cm}
+
+% Footer with year and publisher info
+\begin{tikzpicture}
+    \node (footer) {
+        \textcolor{textsecondary}{
+            \textcopyright\ \the\year\ \PDFAuthor
+        }
+    };
+    
+    \ifdef{\PDFURL}{%
+        \ifx\PDFURL\empty\else
+            \node[below=0.4cm of footer, text=textsecondary, font=\small] {
+                \url{\PDFURL}
+            };
+        \fi
+    }{}
+\end{tikzpicture}
+
+\end{titlepage}
+
+% Ensure next content starts on odd page (for two-sided printing)
+\cleardoublepage
