@@ -145,6 +145,7 @@ find_workspace_root() {
 ensure_dir() {
     local dir="$1"
     [[ ! -d "$dir" ]] && mkdir -p "$dir"
+    return 0
 }
 
 # Check LaTeX installation
