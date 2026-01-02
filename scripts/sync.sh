@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Sync workspace components based on workspace.yml configuration
 
 set -euo pipefail
 
@@ -18,7 +19,7 @@ log "Syncing workspace components..."
 # Get project info
 PROJECT_TYPE="${CONFIG_project_type:-book}"
 PROJECT_CATEGORY="${CONFIG_project_category:-technical}"
-CUSTOM_DIR="${CONFIG_overrides_components_dir:-custom}"
+CUSTOM_DIR="${CONFIG_overrides_components_dir:-configs}"
 
 # Create workspace directory
 WORKSPACE_DIR=".pxis"
@@ -32,6 +33,7 @@ rm -rf "$WORKSPACE_DIR"/components/*
 
 log "Project type: $PROJECT_TYPE"
 log "Category: $PROJECT_CATEGORY"
+log "Override directory: $CUSTOM_DIR"
 
 # Start building preset.tex
 {
@@ -48,16 +50,24 @@ add_component() {
     local component="$1"
     local component_path="$WORKSPACE_ROOT/common/components/${component}.tex"
     
-    # Check for override
+    # Check for override first
     local override_path="$CUSTOM_DIR/${component}.tex"
     if [[ -f "$override_path" ]]; then
-        log "  → Using override: $component"
-        cp "$override_path" "$WORKSPACE_DIR/components/${component}.tex"
-        echo "\\input{$WORKSPACE_DIR/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
-        return
+        # Check if override is allowed
+        local allowed="${CONFIG_overrides_allow:-}"
+        local component_file="${component}.tex"
+        
+        if [[ " $allowed " == *" $component_file "* ]]; then
+            log "  → Using override: $component"
+            cp "$override_path" "$WORKSPACE_DIR/components/${component}.tex"
+            echo "\\input{$WORKSPACE_DIR/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
+            return
+        else
+            warn "Override found but not allowed in config: $component"
+        fi
     fi
     
-    # Check if component exists
+    # Check if component exists in workspace
     if [[ ! -f "$component_path" ]]; then
         warn "Component not found: $component (skipping)"
         return
@@ -97,13 +107,14 @@ if [[ -z "$COMPONENTS" ]]; then
     log "Using default component set for $PROJECT_CATEGORY $PROJECT_TYPE"
     
     if [[ "$PROJECT_TYPE" == "book" ]]; then
-        COMPONENTS="encoding fonts math graphics tables hyperref colors layout titles pagestyles env index bibliography code boxes commands/base"
+        COMPONENTS="fonts math graphics tables hyperref colors layout titles pagestyles env index bibliography code boxes commands/base"
     else
-        COMPONENTS="encoding fonts math graphics tables hyperref colors layout bibliography code commands/base"
+        COMPONENTS="fonts math graphics tables hyperref colors layout bibliography code commands/base"
     fi
 fi
 
 # Add components
+log "Adding components..."
 for component in $COMPONENTS; do
     # Check if it's a package or component
     if [[ -f "$WORKSPACE_ROOT/common/packages/${component}.tex" ]]; then
@@ -119,7 +130,16 @@ log "Applying color scheme: $COLOR_SCHEME"
 
 # Check for custom colors override
 if [[ -f "$CUSTOM_DIR/colors.tex" ]]; then
-    log "  → Using custom colors"
+    local allowed="${CONFIG_overrides_allow:-}"
+    if [[ " $allowed " == *" colors.tex "* ]]; then
+        log "  → Using custom colors"
+    else
+        {
+            echo ""
+            echo "% Color scheme: $COLOR_SCHEME"
+            echo "\\applyColorScheme{$COLOR_SCHEME}"
+        } >> "$WORKSPACE_DIR/preset.tex"
+    fi
 else
     {
         echo ""
@@ -138,7 +158,6 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
         for item in $FRONTMATTER; do
             case "$item" in
                 cover)
-                    # Generate or copy cover
                     cover_type="${CONFIG_cover_type:-generated}"
                     
                     if [[ "$cover_type" == "pdf" ]]; then
@@ -161,36 +180,61 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                     
                 title)
                     # Check for custom title page
-                    if [[ -f "$CUSTOM_DIR/frontmatter/title.tex" ]]; then
+                    local custom_title="$CUSTOM_DIR/frontmatter/title.tex"
+                    local allowed="${CONFIG_overrides_allow:-}"
+                    
+                    if [[ -f "$custom_title" ]] && [[ " $allowed " == *" frontmatter/title.tex "* ]]; then
                         log "  → Using custom title page"
                         ensure_dir "frontmatter"
-                        cp "$CUSTOM_DIR/frontmatter/title.tex" "frontmatter/title.tex"
+                        cp "$custom_title" "frontmatter/title.tex"
                     elif [[ -f "$WORKSPACE_ROOT/common/frontmatter/title.tex" ]]; then
-                        log "  → Using default title page"
+                        log "  → Using default title page (with substitution)"
                         ensure_dir "frontmatter"
-                        cp "$WORKSPACE_ROOT/common/frontmatter/title.tex" "frontmatter/title.tex"
+                        
+                        # Substitute variables in title page
+                        local title="${CONFIG_project_title:-Untitled}"
+                        local author="${CONFIG_project_author:-Author}"
+                        local url="${CONFIG_project_url:-}"
+                        
+                        sed -e "s|{{TITLE}}|$title|g" \
+                            -e "s|{{AUTHOR}}|$author|g" \
+                            -e "s|{{URL}}|$url|g" \
+                            "$WORKSPACE_ROOT/common/frontmatter/title.tex" > "frontmatter/title.tex"
                     fi
                     ;;
                     
-                *)
-                    # Copy other frontmatter
-                    fm_file="$WORKSPACE_ROOT/common/frontmatter/${item}.tex"
-                    custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
-                    
-                    if [[ -f "$custom_fm" ]]; then
-                        log "  → Using custom $item"
-                        ensure_dir "frontmatter"
-                        cp "$custom_fm" "frontmatter/${item}.tex"
-                    elif [[ -f "$fm_file" ]]; then
-                        log "  → Adding frontmatter: $item"
-                        ensure_dir "frontmatter"
-                        cp "$fm_file" "frontmatter/${item}.tex"
+                preface|acknowledgments|introduction)
+                    # Check if frontmatter file exists
+                    if [[ ! -f "frontmatter/${item}.tex" ]]; then
+                        # Check for custom version
+                        local custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
+                        if [[ -f "$custom_fm" ]]; then
+                            log "  → Using custom $item"
+                            ensure_dir "frontmatter"
+                            cp "$custom_fm" "frontmatter/${item}.tex"
+                        else
+                            # Use template if available
+                            local template_fm="$WORKSPACE_ROOT/template/books/frontmatter/${item}.tex"
+                            if [[ -f "$template_fm" ]]; then
+                                log "  → Creating $item from template"
+                                ensure_dir "frontmatter"
+                                
+                                # Substitute variables
+                                local title="${CONFIG_project_title:-Untitled}"
+                                local author="${CONFIG_project_author:-Author}"
+                                
+                                sed -e "s|{{TITLE}}|$title|g" \
+                                    -e "s|{{AUTHOR}}|$author|g" \
+                                    "$template_fm" > "frontmatter/${item}.tex"
+                            fi
+                        fi
                     fi
                     ;;
             esac
         done
     fi
 fi
+
 # Update hyperref with metadata
 {
     echo ""
@@ -226,7 +270,17 @@ BUILD_DATE=$(get_build_date)
     echo "\\newcommand{\\BuildDate}{$BUILD_DATE}"
 } >> "$WORKSPACE_DIR/preset.tex"
 
-log "Sync completed successfully!"
-info "Generated: $WORKSPACE_DIR/preset.tex"
-info "Version: $VERSION"
-info "Build date: $BUILD_DATE"
+log "✓ Sync completed successfully!"
+info ""
+info "Generated files:"
+info "  - $WORKSPACE_DIR/preset.tex (main preset)"
+info "  - $WORKSPACE_DIR/components/ (synced components)"
+info ""
+info "Configuration:"
+info "  - Version: $VERSION"
+info "  - Build date: $BUILD_DATE"
+info "  - Category: $PROJECT_CATEGORY"
+info "  - Color scheme: $COLOR_SCHEME"
+info "  - Override directory: $CUSTOM_DIR"
+info ""
+info "Ready to build! Run: make build"
