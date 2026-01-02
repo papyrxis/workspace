@@ -3,50 +3,81 @@ BUILD_DATE ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
 WORKSPACE_ROOT := $(shell pwd)
 SRC_DIR := $(WORKSPACE_ROOT)/src
+WORKSPACE := workspace
 
-help:
-	@echo "Papyrxis Workspace"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  make help      - Show this help"
-	@echo "  make sync      - Sync workspace components"
-	@echo "  make build     - Build document"
-	@echo "  make clean     - Clean build artifacts"
-	@echo "  make watch     - Watch and rebuild on changes"
-	@echo "  make version   - Show version information"
+ifeq ($(shell [ -d "$(WORKSPACE)" ] && echo 1 || echo 0), 1)
+    WORKSPACE_SRC := $(WORKSPACE)/src
+else
+    WORKSPACE_SRC := $(SRC_DIR)
+endif
+
+all: sync build
 
 sync:
-	@bash $(SRC_DIR)/sync.sh
+	@bash $(WORKSPACE_SRC)/sync.sh
 
 build: sync
-	@bash $(SRC_DIR)/build.sh
+	@bash $(WORKSPACE_SRC)/build.sh
 
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf build/
-	@find . -type f \( -name "*.aux" -o -name "*.log" -o -name "*.out" \
+	@find . -type f \( \
+		-name "*.aux" -o -name "*.log" -o -name "*.out" \
 		-o -name "*.toc" -o -name "*.bbl" -o -name "*.blg" \
-		-o -name "*.synctex.gz" -o -name "*.fdb_latexmk" -o -name "*.fls" \
-		-o -name "*.idx" -o -name "*.ilg" -o -name "*.ind" \
-		-o -name "*.run.xml" -o -name "*.bcf" \) -delete
-	@echo "Clean complete!"
+		-o -name "*.synctex.gz" -o -name "*.fdb_latexmk" \
+		-o -name "*.fls" -o -name "*.idx" -o -name "*.ilg" \
+		-o -name "*.ind" -o -name "*.run.xml" -o -name "*.bcf" \
+		\) -delete 2>/dev/null || true
+	@echo "✓ Clean complete"
 
 watch:
-	@bash $(SRC_DIR)/build.sh -w
+	@bash $(WORKSPACE_SRC)/build.sh -w
 
 version:
 	@echo "Version: $(VERSION)"
 	@echo "Build date: $(BUILD_DATE)"
 
-install:
-	@echo "Installing scripts..."
-	@sudo mkdir -p /usr/local/share/papyrxis
-	@sudo cp -r $(SRC_DIR)/* /usr/local/share/papyrxis/
-	@sudo cp -r common /usr/local/share/papyrxis/
-	@sudo cp -r template /usr/local/share/papyrxis/
-	@echo '#!/usr/bin/env bash' | sudo tee /usr/local/bin/papyrxis > /dev/null
-	@echo 'exec bash /usr/local/share/papyrxis/init.sh "$$@"' | sudo tee -a /usr/local/bin/papyrxis > /dev/null
-	@sudo chmod +x /usr/local/bin/papyrxis
-	@echo "Papyrxis installed to /usr/local/bin/papyrxis"
+part:
+	@bash $(WORKSPACE_SRC)/generator/part.sh $(ARGS)
 
-.DEFAULT_GOAL := help
+chapter:
+	@bash $(WORKSPACE_SRC)/generator/chapter.sh $(ARGS)
+
+cover:
+	@bash $(WORKSPACE_SRC)/generator/cover.sh workspace.yml
+
+test:
+	@echo "Building document..."
+	@$(MAKE) clean >/dev/null 2>&1
+	@$(MAKE) build >/dev/null 2>&1 && echo "✓ Build successful" || echo "✗ Build failed"
+
+help:
+	@echo "Papyrxis Workspace - Build System"
+	@echo ""
+	@echo "MAIN TARGETS:"
+	@echo "  make            Build document (sync + build)"
+	@echo "  make sync       Sync workspace components from workspace.yml"
+	@echo "  make build      Build LaTeX document"
+	@echo "  make clean      Remove all build artifacts"
+	@echo "  make watch      Watch mode (auto-rebuild on changes)"
+	@echo ""
+	@echo "GENERATORS:"
+	@echo "  make part ARGS='-n 2 -t \"Part Title\"'"
+	@echo "  make chapter ARGS='-p 1 -c 2 -t \"Chapter Title\"'"
+	@echo "  make cover      Generate cover page"
+	@echo ""
+	@echo "UTILITIES:"
+	@echo "  make version    Show version information"
+	@echo "  make test       Quick build test"
+	@echo "  make help       Show this help"
+	@echo ""
+	@echo "EXAMPLES:"
+	@echo "  make                                    # Build document"
+	@echo "  make watch                              # Auto-rebuild"
+	@echo "  make part ARGS='-n 1 -t \"Introduction\"'"
+	@echo "  make chapter ARGS='-p 1 -c 1 -t \"Getting Started\"'"
+	@echo ""
+	@echo "For more information: docs/getting-started.md"
+
+.DEFAULT_GOAL := all
