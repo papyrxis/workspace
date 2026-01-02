@@ -24,11 +24,12 @@ bootstrap_defaults() {
 
 bootstrap_git_info() {
     detect_git_info
-    
+   
     [[ -z "$NAME" ]] && NAME=$(basename "$(realpath "$TARGET_DIR")")
     [[ -z "$TITLE" ]] && TITLE="$NAME"
     [[ -z "$AUTHOR" ]] && AUTHOR="Author Name"
     [[ -z "$URL" ]] && URL="https://github.com/user/$NAME"
+    return 0
 }
 
 bootstrap_version() {

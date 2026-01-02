@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-declare -g SCRIPT_DIR=""
 declare -g WORKSPACE_ROOT=""
 
 declare -g TYPE=""
