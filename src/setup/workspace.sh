@@ -9,15 +9,22 @@ init_workspace() {
     if check_workspace_file; then
         info "workspace.yml already exists, loading existing config"
         load_config "$WORKSPACE_FILE"
-        return 0
+       
+        TYPE=$(get_config "project.type" "$TYPE")
+        CATEGORY=$(get_config "project.category" "$CATEGORY")
+        TITLE=$(get_config "project.title" "$TITLE")
+        AUTHOR=$(get_config "project.author" "$AUTHOR")
+        EMAIL=$(get_config "project.email" "$EMAIL")
+        URL=$(get_config "project.url" "$URL")
+        SUBTITLE=$(get_config "project.subtitle" "$SUBTITLE")
+        SUBJECT=$(get_config "project.subject" "$SUBJECT")
+        KEYWORDS=$(get_config "project.keywords" "$KEYWORDS")
+    else 
+        generate_workspace_file
+        setup_project_structure
     fi
-    
-    generate_workspace_file
-    setup_project_structure
     setup_main_tex
     setup_makefile
-    setup_gitignore
-    setup_readme
 }
 
 generate_workspace_file() {
@@ -255,87 +262,5 @@ setup_makefile() {
     fi
 }
 
-setup_gitignore() {
-    if [[ -f ".gitignore" ]]; then
-        info ".gitignore already exists, skipping"
-        return 0
-    fi
-    
-    log "Creating .gitignore..."
-    
-    cat > .gitignore <<'EOF'
-build/
-*.aux
-*.log
-*.out
-*.toc
-*.bbl
-*.blg
-*.synctex.gz
-*.fdb_latexmk
-*.fls
-*.idx
-*.ilg
-*.ind
-*.run.xml
-*.bcf
-
-.pxis/
-
-.DS_Store
-Thumbs.db
-
-*.swp
-*.swo
-*~
-.vscode/
-.idea/
-EOF
-    
-    success "Created .gitignore"
-}
-
-setup_readme() {
-    if [[ -f "README.md" ]]; then
-        info "README.md already exists, skipping"
-        return 0
-    fi
-    
-    log "Creating README.md..."
-    
-    cat > README.md <<EOF
-# $TITLE
-
-A $CATEGORY $TYPE project using Papyrxis workspace.
-
-## Quick Start
-
-\`\`\`bash
-make
-\`\`\`
-
-## Watch Mode
-
-\`\`\`bash
-make watch
-\`\`\`
-
-## Customization
-
-Edit \`workspace.yml\` to configure components, colors, and features.
-
-## Documentation
-
-See workspace/docs/ for detailed documentation.
-
-## License
-
-See copyright information in the document.
-EOF
-    
-    success "Created README.md"
-}
-
 export -f init_workspace generate_workspace_file setup_project_structure
 export -f setup_main_tex create_basic_main_tex setup_makefile
-export -f setup_gitignore setup_readme
