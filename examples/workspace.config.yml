@@ -1,105 +1,87 @@
-# Papyrxis Workspace Configuration
+# Papyrxis Workspace Configuration Reference
+# Complete example showing all available options
+# Copy and modify for your project
 
-# Project metadata
 project:
-  type: book                    # book, article
-  category: technical           # technical, academic, general
-  title: "Your Book Title"
-  subtitle: "Optional Subtitle"
-  author: "Author Name"
-  email: "author@example.com"
-  date: "auto"                 # auto uses \today, or specify date
-  url: "https://github.com/user/repo"
-  subject: "Subject Area"
-  keywords: "keyword1, keyword2, keyword3"
+  type: book                    # Required: book or article
+  category: technical           # Required: technical or academic
+  
+  title: "Your Book Title"      # Required: Document title
+  author: "Author Name"         # Required: Author name
+  email: "author@example.com"   # Optional: Author email
+  url: "https://github.com/user/repo"  # Optional: Project URL
 
-# Build configuration
 build:
-  engine: pdflatex            # pdflatex, xelatex, lualatex
-  bibtex: biber               # biber, bibtex
-  output_dir: build
-  watch_mode: true
+  engine: pdflatex              # LaTeX engine: pdflatex, xelatex, lualatex
+  bibtex: biber                 # Bibliography: biber or bibtex
+  output_dir: build             # Output directory for build artifacts
+  watch_mode: true              # Enable watch mode by default
 
-# Version management
 version:
-  source: git                         # git, manual
-  format: "v{major}.{minor}.{patch}"  # for git tags
-  fallback: "dev"                     # if no git tags
+  source: git                   # Version source: git or manual
+  format: "v{major}.{minor}.{patch}"  # Format for git tags
+  fallback: "dev"               # Fallback if git not available
 
-# Components to include
 components:
-  - encoding
-  - fonts
-  - math
-  - graphics
-  - tables
-  - hyperref
-  - code
-  - bibliography
-  - colors
-  - layout
-  - titles
-  - pagestyles
-  - env 
-  - boxes
-  - index
-  - commands/base
+  - fonts                       # Font configuration
+  - math                        # Math packages
+  - graphics                    # Graphics and figures
+  - tables                      # Table formatting
+  - hyperref                    # PDF links and metadata
+  - code                        # Code listings
+  - bibliography                # Bibliography support
+  - colors                      # Color schemes
+  - layout                      # Page layout
+  - titles                      # Section titles
+  - pagestyles                  # Headers and footers (books)
+  - env                         # Custom environments
+  - boxes                       # Colored boxes
+  - index                       # Index generation
+  - commands/base               # Base commands
 
-# Color scheme
+features:
+  toc: true                     # Table of contents
+  index: true                   # Index generation
+  bibliography: true            # Bibliography
+  glossary: false               # Glossary (not yet implemented)
+  appendix: true                # Appendix
+
+frontmatter:
+  - cover                       # Cover page (PDF or generated)
+  - title                       # Title page
+  - copyright                   # Copyright page
+  - preface                     # Preface
+  - introduction                # Introduction
+
 colors:
-  scheme: technical           # technical, academic, custom
-  # Custom colors 
-  custom:
-    primary: "30,40,50"
+  scheme: technical             # Predefined: technical, academic
+  
+  custom:                       # Custom colors (if scheme: custom)
+    primary: "30,40,50"         # RGB values
     accent: "0,86,179"
     text: "33,37,41"
 
-# Features (for books)
-features:
-  toc: true                   # Table of contents
-  index: true                 # Index generation
-  bibliography: true          # Bibliography
-  glossary: false             # Glossary
-  appendix: true              # Appendix
-
-# Front matter (for books)
-frontmatter:
-  - cover                     # PDF cover or generated
-  - title                     # Title page
-  - copyright                 # Copyright page
-  - preface                   # Preface
-  - acknowledgments           # Acknowledgments
-  - introduction              # Introduction
-
-# Copyright settings
 copyright:
-  type: cc-by-sa             # cc-by-sa, cc-by, cc-by-nc, mit, custom, none
-  year: "auto"               # auto uses current year
-  holder: "Author Name"
-  custom_text: null          # For custom license text
+  type: cc-by-sa                # License: cc-by-sa, cc-by, cc-by-nc, 
+                                #          cc-by-nc-sa, mit, apache, custom, none
+  year: "auto"                  # auto uses current year
+  holder: "Author Name"         # Copyright holder
+  custom_text: null             # Custom license text (if type: custom)
 
-# Cover settings (for books)
 cover:
-  type: generated            # generated, pdf, none
-  pdf_file: "cover.pdf"      # if type: pdf
-  # Generated cover settings
-  generated:
-    style: modern            # modern, classic, minimal
-    title_size: large        # small, medium, large
-    include_subtitle: true
-    include_author: true
-    background_color: "myblue!8"
-    title_color: "myblue"
+  type: generated               # Cover type: generated, pdf, or none
+  pdf_file: "cover.pdf"         # PDF file (if type: pdf)
+  
+  generated:                    # Generated cover settings (if type: generated)
+    style: modern               # Style: modern, classic, or minimal
+    title_size: large           # Size: small, medium, or large
+    include_author: true        # Show author on cover
 
-# Override settings
 overrides:
-  # Path to custom components
-  components_dir: "configs/"
-  # Files to override 
-  allow:
-    - colors.tex
+  components_dir: "configs"     # Directory for custom components
+  
+  allow:                        # List of components that can be overridden
+    - colors.tex                # Only listed files can be overridden
     - commands/base.tex
     - pagestyles.tex
     - frontmatter/title.tex
-    - frontmatter/copyright.tex
-    - cover.tex

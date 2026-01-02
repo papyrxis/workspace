@@ -1,357 +1,333 @@
-# Examples
+# Papyrxis Examples
 
-Working examples demonstrating Papyrxis features and capabilities.
-
-## Overview
-
-This directory contains complete, working examples of documents built with Papyrxis. Each example demonstrates specific features or use cases.
-
-Examples are self-contained and can be built independently.
+Complete, working examples demonstrating Papyrxis features.
 
 ## Available Examples
 
-### workspace.config.yml
+### minimal-book
 
-Template configuration file showing all available options with explanations.
+**Simplest book structure**
 
-Purpose:
-- Reference for all configuration options
-- Shows default values
-- Explains each setting
-- Copy and modify for your projects
+Perfect for:
+- First-time users
+- Quick start
+- Learning basics
 
-Usage:
+Features:
+- Minimal configuration
+- Single part
+- Basic front matter
+- No customization
+
 ```bash
-cp examples/workspace.config.yml my-project/workspace.yml
-# Edit workspace.yml for your needs
+cd examples/minimal-book
+make
 ```
 
-## Planned Examples
+### technical-book
 
-The following examples are planned for future releases:
+**Full-featured technical book**
 
-### Technical Book Example
+Perfect for:
+- Technical documentation
+- Programming books
+- Algorithm textbooks
 
-Complete technical book with:
+Features:
 - Multiple parts and chapters
 - Code listings
-- Diagrams
-- Index and bibliography
-- Custom environments
-
-Location: examples/technical-book/
-
-### Academic Paper Example
-
-IEEE-format academic paper with:
-- Two-column layout
 - Mathematical content
-- Figures and tables
-- Citations and references
-
-Location: examples/academic-paper/
-
-### Minimal Book Example
-
-Simplest possible book:
-- Single part
-- Few chapters
-- Minimal front matter
-- Shows bare essentials
-
-Location: examples/minimal-book/
-
-### Custom Styling Example
-
-Book with extensive customization:
-- Custom color scheme
-- Custom fonts
 - Custom environments
-- Override examples
-
-Location: examples/custom-styling/
-
-### Multilingual Example
-
-Document with multiple languages:
-- Font setup for different scripts
-- Babel configuration
-- Proper hyphenation
-- Bibliography in multiple languages
-
-Location: examples/multilingual/
-
-## Using Examples
-
-### Exploring Examples
-
-Browse the examples/ directory to see different approaches and configurations.
-
-### Building Examples
-
-Each example can be built:
+- Index and bibliography
+- Custom colors
 
 ```bash
 cd examples/technical-book
 make
 ```
 
-Output in build/main.pdf
+### workspace.config.yml
 
-### Copying Examples
+**Complete configuration reference**
 
-To use an example as starting point:
+Shows all available options with explanations and examples.
+
+Use as:
+- Configuration reference
+- Template for your workspace.yml
+- Learning tool
 
 ```bash
-# Copy example to new location
-cp -r examples/technical-book my-book
-
-# Remove git history (if example is tracked)
-rm -rf my-book/.git
-
-# Initialize your own git repo
-cd my-book
-git init
-
-# Customize workspace.yml
-vim workspace.yml
-
-# Build
-make
-```
-
-### Modifying Examples
-
-Examples are meant to be modified:
-
-1. Copy example
-2. Edit workspace.yml for your needs
-3. Update content files
-4. Add/remove parts as needed
-5. Build and test
-
-## Example Structure
-
-Each example typically includes:
-
-```
-example-name/
-├── workspace.yml      # Configuration
-├── main.tex          # Document entry
-├── Makefile          # Build commands
-├── README.md         # Example documentation
-├── parts/            # Content (books)
-├── frontmatter/      # Front matter (books)
-├── figures/          # Images
-├── references/       # Bibliography
-└── configs/          # Custom overrides (if any)
+cp examples/workspace.config.yml my-project/workspace.yml
 ```
 
 ## Example Categories
 
-Examples organized by:
+### By Complexity
 
-**Document Type:**
-- Books
-- Articles
-- Reports
+**Minimal** (Start here)
+- minimal-book - Bare essentials
 
-**Purpose:**
-- Technical documentation
-- Academic writing
-- Theses
-- Presentations
+**Standard** (Most users)
+- technical-book - Full features
 
-**Complexity:**
-- Minimal (simple structure)
-- Standard (typical usage)
-- Advanced (custom features)
+**Advanced** (Experts)
+- custom-styling - Deep customization
+- multilingual - Multiple languages
 
-## Learning from Examples
+### By Purpose
 
-Best way to learn Papyrxis:
+**Technical Writing**
+- technical-book - Programming, algorithms
+- software-manual - Software documentation
 
-1. Read getting-started.md for basics
-2. Look at minimal examples to understand structure
-3. Explore standard examples for typical usage
-4. Study advanced examples for customization
-5. Copy closest match to your needs
-6. Modify for your project
+**Academic**
+- academic-paper - Research paper
+- thesis - PhD/Master's thesis
 
-## Contributing Examples
+**General**
+- minimal-book - Any book
+- report - Technical reports
 
-To contribute an example:
+## Quick Start
+
+### Using an Example
+
+```bash
+# 1. Copy example
+cp -r examples/minimal-book my-book
+
+# 2. Navigate to project
+cd my-book
+
+# 3. Update configuration
+vim workspace.yml
+
+# 4. Build
+make
+```
+
+### Exploring Examples
+
+```bash
+# Build all examples
+cd examples
+for dir in */; do
+    if [ -f "$dir/Makefile" ]; then
+        echo "Building $dir"
+        (cd "$dir" && make)
+    fi
+done
+```
+
+## Example Structure
+
+Each example includes:
+
+```
+example-name/
+├── README.md           # Detailed documentation
+├── workspace.yml       # Configuration
+├── main.tex           # Document entry
+├── Makefile           # Build system
+├── parts/             # Content (books)
+├── frontmatter/       # Front matter
+├── backmatter/        # Back matter
+├── figures/           # Images
+├── references/        # Bibliography
+└── configs/           # Custom overrides (if any)
+```
+
+## Common Commands
+
+All examples support:
+
+```bash
+make              # Build document
+make sync         # Sync components
+make clean        # Clean artifacts
+make watch        # Auto-rebuild
+make version      # Show version
+make help         # Show help
+
+# Generators
+make part ARGS='-n 2 -t "Part Title"'
+make chapter ARGS='-p 1 -c 2 -t "Chapter Title"'
+```
+
+## Learning Path
+
+### Beginner
+
+1. **Start**: minimal-book
+2. **Build**: Make it work
+3. **Modify**: Change title, add chapter
+4. **Understand**: Read generated files
+
+### Intermediate
+
+1. **Explore**: technical-book
+2. **Features**: Try code, math, index
+3. **Customize**: Modify colors
+4. **Extend**: Add your content
+
+### Advanced
+
+1. **Study**: custom-styling
+2. **Override**: Components
+3. **Create**: Custom environments
+4. **Master**: Full customization
+
+## Feature Comparison
+
+| Feature | minimal-book | technical-book |
+|---------|-------------|---------------|
+| Parts | 1 | 2+ |
+| Chapters | 1 | 4+ |
+| Code Listings | ✗ | ✓ |
+| Math | ✓ | ✓ |
+| Index | ✗ | ✓ |
+| Custom Colors | ✗ | ✓ |
+| Bibliography | ✓ | ✓ |
+| Custom Envs | ✗ | ✓ |
+
+## Customization Examples
+
+### Change Colors
+
+```yaml
+# workspace.yml
+colors:
+  scheme: academic  # or technical
+```
+
+### Add Code Support
+
+```yaml
+# workspace.yml
+components:
+  - code
+```
+
+### Enable Index
+
+```yaml
+# workspace.yml
+features:
+  index: true
+```
+
+### Custom Colors
+
+```yaml
+# workspace.yml
+colors:
+  scheme: custom
+  custom:
+    primary: "25,45,85"
+    accent: "0,120,215"
+```
+
+## Tips
+
+### Building
+
+- Use `make watch` during writing
+- Run `make clean` before final build
+- Check `build/main.log` for errors
+
+### Customizing
+
+- Start with closest example
+- Modify workspace.yml first
+- Override components only if needed
+- Keep customizations organized
+
+### Troubleshooting
+
+- Verify LaTeX installation
+- Check workspace.yml syntax
+- Run `make sync` after config changes
+- See build logs for errors
+
+## Common Issues
+
+**Build fails**
+```bash
+# Check LaTeX
+pdflatex --version
+
+# Clean and retry
+make clean && make
+
+# Check logs
+cat build/main.log
+```
+
+**Components not found**
+```bash
+# Sync components
+make sync
+
+# Check config
+cat workspace.yml
+```
+
+**PDF looks wrong**
+```bash
+# Update workspace
+cd workspace
+git pull
+
+# Resync
+cd ..
+make sync && make
+```
+
+## Creating Your Example
+
+Want to contribute an example?
 
 1. Create complete working example
 2. Include comprehensive README
 3. Test build process
-4. Document special features
+4. Document features
 5. Submit pull request
 
-Good examples are:
-- Complete and working
-- Well documented
+Good examples:
+- Are complete and working
 - Demonstrate specific features
-- Typical of real use case
-- Include source comments
-
-## Example Testing
-
-Examples should build without errors:
-
-```bash
-# Test all examples
-cd examples
-for dir in */; do
-    echo "Testing $dir"
-    (cd "$dir" && make) || echo "Failed: $dir"
-done
-```
-
-Maintainers run this test regularly to ensure examples stay working.
-
-## Example Documentation
-
-Each example should include README.md with:
-
-- Purpose of example
-- Features demonstrated
-- Prerequisites
-- Build instructions
-- Customization notes
-- Key files explained
-
-## Example Best Practices
-
-When creating examples:
-
-**Keep it focused:**
-- One main concept per example
-- Do not mix too many features
-- Clear purpose
-
-**Make it complete:**
-- All files needed to build
-- No missing dependencies
-- Working out of box
-
-**Document it well:**
-- README explains everything
-- Comments in source files
-- Expected output described
-
-**Test it:**
-- Build from clean state
-- Verify output
-- Check for errors
-
-## Common Example Patterns
-
-### Example workspace.yml
-
-Most examples include annotated workspace.yml:
-
-```yaml
-# Project metadata
-project:
-  type: book
-  category: technical
-  title: "Example Title"
-  # ...
-
-# Component selection
-components:
-  - fonts
-  - math
-  # Only what this example needs
-
-# Custom settings for demonstration
-colors:
-  scheme: custom
-  custom:
-    primary: "30,40,50"
-```
-
-### Example main.tex
-
-Typical structure:
-
-```latex
-\documentclass[12pt,oneside]{book}
-
-% Metadata
-\newcommand{\PDFTitle}{Example Title}
-% ...
-
-% Import preset
-\input{.pxis/preset}
-
-\begin{document}
-% Content organization
-\frontmatter
-\input{frontmatter/title}
-% ...
-
-\mainmatter
-\input{parts/part01/part01}
-
-\backmatter
-\printbibliography
-\end{document}
-```
-
-### Example README.md
-
-Template:
-
-```markdown
-# Example Name
-
-Brief description.
-
-## Purpose
-
-What this example demonstrates.
-
-## Features
-
-- Feature 1
-- Feature 2
-
-## Building
-
-    make
-
-## Customization
-
-How to adapt for your needs.
-
-## Files
-
-- file1.tex - Purpose
-- file2.tex - Purpose
-```
-
-## Troubleshooting Examples
-
-**Example does not build**
-- Update workspace submodule: git submodule update
-- Check TeX installation: pdflatex --version
-- Read example README for requirements
-
-**Missing packages**
-- Install full TeX Live
-- Check system-specific requirements
-
-**Output looks different**
-- Font availability varies by system
-- Graphics may render differently
-- Check example documentation
+- Include clear documentation
+- Have realistic content
+- Are well-tested
 
 ## Related Documentation
 
-See also:
-- docs/getting-started.md - Setup and usage
-- docs/templates.md - Template system
-- docs/customization.md - Customizing documents
-- docs/configuration.md - Configuration reference
+- [Getting Started](../docs/getting-started.md)
+- [Configuration](../docs/configuration.md)
+- [Customization](../docs/customization.md)
+- [Templates](../docs/templates.md)
+
+## Support
+
+Questions about examples:
+- Check example README
+- See main documentation
+- Search GitHub issues
+- Ask in discussions
+
+Found a bug:
+- Report in GitHub issues
+- Include example name
+- Provide error logs
+- Show configuration
+
+## Contributing
+
+Improve examples:
+- Fix errors
+- Add documentation
+- Create new examples
+- Update existing ones
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.

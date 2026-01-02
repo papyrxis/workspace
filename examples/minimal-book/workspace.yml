@@ -1,0 +1,66 @@
+project:
+  type: book
+  category: technical
+  title: "Data Structures and Algorithms"
+  author: "John Doe"
+  email: "john.doe@example.com"
+  url: "https://github.com/johndoe/dsa-book"
+
+build:
+  engine: pdflatex
+  bibtex: biber
+  output_dir: build
+
+version:
+  source: git
+  format: "v{major}.{minor}.{patch}"
+  fallback: "1.0.0"
+
+components:
+  - fonts
+  - math
+  - graphics
+  - colors
+  - layout
+  - titles
+  - pagestyles
+  - env
+  - boxes
+  - code
+  - bibliography
+  - index
+  - commands/base
+
+features:
+  toc: true
+  index: true
+  bibliography: true
+  appendix: true
+
+frontmatter:
+  - cover
+  - title
+  - copyright
+  - preface
+  - introduction
+
+colors:
+  scheme: technical
+
+copyright:
+  type: cc-by-sa
+  year: "auto"
+  holder: "John Doe"
+
+cover:
+  type: generated
+  generated:
+    style: modern
+    title_size: large
+    include_author: true
+
+overrides:
+  components_dir: "configs"
+  allow:
+    - colors.tex
+    - commands/base.tex
