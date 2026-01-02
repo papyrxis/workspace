@@ -180,8 +180,8 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                     
                 title)
                     # Check for custom title page
-                    local custom_title="$CUSTOM_DIR/frontmatter/title.tex"
-                    local allowed="${CONFIG_overrides_allow:-}"
+                    custom_title="$CUSTOM_DIR/frontmatter/title.tex"
+                    allowed="${CONFIG_overrides_allow:-}"
                     
                     if [[ -f "$custom_title" ]] && [[ " $allowed " == *" frontmatter/title.tex "* ]]; then
                         log "  → Using custom title page"
@@ -192,9 +192,9 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                         ensure_dir "frontmatter"
                         
                         # Substitute variables in title page
-                        local title="${CONFIG_project_title:-Untitled}"
-                        local author="${CONFIG_project_author:-Author}"
-                        local url="${CONFIG_project_url:-}"
+                        title="${CONFIG_project_title:-Untitled}"
+                        author="${CONFIG_project_author:-Author}"
+                        url="${CONFIG_project_url:-}"
                         
                         sed -e "s|{{TITLE}}|$title|g" \
                             -e "s|{{AUTHOR}}|$author|g" \
@@ -204,28 +204,23 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                     ;;
                     
                 preface|acknowledgments|introduction)
-                    # Check if frontmatter file exists
-                    if [[ ! -f "frontmatter/${item}.tex" ]]; then
-                        # Check for custom version
-                        local custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
+                    # Check if frontmatter file already exists
+                    if [[ -f "frontmatter/${item}.tex" ]]; then
+                        log "  → Frontmatter exists: $item (skipping)"
+                    else
+                        # Check for custom version first
+                        custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
                         if [[ -f "$custom_fm" ]]; then
                             log "  → Using custom $item"
                             ensure_dir "frontmatter"
                             cp "$custom_fm" "frontmatter/${item}.tex"
                         else
-                            # Use template if available
-                            local template_fm="$WORKSPACE_ROOT/template/books/frontmatter/${item}.tex"
-                            if [[ -f "$template_fm" ]]; then
-                                log "  → Creating $item from template"
-                                ensure_dir "frontmatter"
-                                
-                                # Substitute variables
-                                local title="${CONFIG_project_title:-Untitled}"
-                                local author="${CONFIG_project_author:-Author}"
-                                
-                                sed -e "s|{{TITLE}}|$title|g" \
-                                    -e "s|{{AUTHOR}}|$author|g" \
-                                    "$template_fm" > "frontmatter/${item}.tex"
+                            # Generate from template using generator script
+                            if [[ -f "$WORKSPACE_ROOT/scripts/generator/frontmatter.sh" ]]; then
+                                log "  → Generating $item from template"
+                                bash "$WORKSPACE_ROOT/scripts/generator/frontmatter.sh" -t "$item" workspace.yml
+                            else
+                                warn "Frontmatter generator not found, skipping $item"
                             fi
                         fi
                     fi

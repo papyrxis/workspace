@@ -6,6 +6,16 @@
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 
+\newcommand{\frontmatterpagenumber}{%
+  \pagenumbering{roman}%
+  \setcounter{page}{1}%
+}
+
+\newcommand{\mainmatterpagenumber}{%
+  \pagenumbering{arabic}%
+  \setcounter{page}{1}%
+}
+
 \newcommand{\headerrule}{%
   \vbox to 0pt{%
     \vss%
