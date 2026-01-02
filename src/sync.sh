@@ -46,7 +46,6 @@ main() {
     info "  - Version: $VERSION"
     info "  - Build date: $BUILD_DATE"
     info "  - Category: $PROJECT_CATEGORY"
-    info "  - Color scheme: ${COLOR_SCHEME:-$PROJECT_CATEGORY}"
     info ""
     info "Ready to build! Run: make"
 }

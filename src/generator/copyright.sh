@@ -21,7 +21,6 @@ main() {
     
     local copyright_text
     copyright_text=$(generate_copyright_text)
-    
     local title="${CONFIG_project_title:-Untitled}"
     local author="${CONFIG_project_author:-Author Name}"
     local year="${CONFIG_copyright_year:-auto}"

@@ -35,13 +35,10 @@ project:
   type: $TYPE
   category: $CATEGORY
   title: "$TITLE"
-  subtitle: "${SUBTITLE:-}"
   author: "$AUTHOR"
   email: "${EMAIL:-}"
   date: "auto"
   url: "$URL"
-  subject: "$CATEGORY project"
-  keywords: "latex, $TYPE, $CATEGORY"
 
 build:
   engine: pdflatex
@@ -118,15 +115,12 @@ EOF
         cat >> workspace.yml <<EOF
     - pagestyles.tex
     - frontmatter/title.tex
-    - frontmatter/copyright.tex
-    - cover.tex
 
 cover:
   type: generated
   generated:
     style: modern
     title_size: large
-    include_subtitle: true
     include_author: true
 EOF
     fi
@@ -253,7 +247,7 @@ setup_makefile() {
     
     log "Creating Makefile..."
     
-    local template_makefile="$WORKSPACE_ROOT/template/books/Makefile"
+    local template_makefile="$WORKSPACE_ROOT/Makefile"
     if [[ -f "$template_makefile" ]]; then
         cp "$template_makefile" Makefile
         success "Created Makefile"

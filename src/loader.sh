@@ -5,13 +5,23 @@ set -euo pipefail
 load_config() {
     local config_file="${1:-workspace.yml}"
     
-    [[ ! -f "$config_file" ]] && return 1
+    if [[ ! -f "$config_file" ]]; then
+        return 1
+    fi
     
     while IFS= read -r line; do
         [[ "$line" =~ ^#.*$ ]] && continue
         [[ -z "$line" ]] && continue
-        eval "export $line"
-    done < <(parse_yaml "$config_file")
+        
+        if [[ "$line" == *"="* ]]; then
+            local key="${line%%=*}"
+            local value="${line#*=}"
+            
+            if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+                eval "export ${key}=${value}"
+            fi
+        fi
+    done < <(parse_yaml "$config_file" 2>/dev/null)
     
     return 0
 }
@@ -20,21 +30,34 @@ get_config() {
     local key="$1"
     local default="${2:-}"
     local var_name="CONFIG_${key//./_}"
-    local var_value="${!var_name:-$default}"
-    echo "$var_value"
+    local var_name="${var_name//-/_}"
+    
+    if [[ -v "$var_name" ]]; then
+        local value="${!var_name}"
+        echo "$value"
+    else
+        echo "$default"
+    fi
 }
 
 load_from_config() {
-    [[ ! -f "$WORKSPACE_FILE" ]] && return 1
+    if [[ ! -f "$WORKSPACE_FILE" ]]; then
+        return 1
+    fi
     
-    load_config "$WORKSPACE_FILE" || return 1
+    if ! load_config "$WORKSPACE_FILE"; then
+        return 1
+    fi
     
     OUTPUT_DIR=$(get_config "build_output_dir" "build")
     ENGINE=$(get_config "build_engine" "pdflatex")
     BIBTEX=$(get_config "build_bibtex" "biber")
     
-    PROJECT_TYPE=$(get_config "project_type" "$TYPE")
-    PROJECT_CATEGORY=$(get_config "project_category" "$CATEGORY")
+    [[ -z "$TYPE" ]] && TYPE=$(get_config "project_type" "book")
+    [[ -z "$CATEGORY" ]] && CATEGORY=$(get_config "project_category" "technical")
+    
+    PROJECT_TYPE="$TYPE"
+    PROJECT_CATEGORY="$CATEGORY"
     OVERRIDE_DIR=$(get_config "overrides_components_dir" "configs")
     
     return 0
