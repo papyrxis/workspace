@@ -21,7 +21,7 @@ PROJECT_CATEGORY="${CONFIG_project_category:-technical}"
 CUSTOM_DIR="${CONFIG_overrides_components_dir:-custom}"
 
 # Create workspace directory
-WORKSPACE_DIR="workspace"
+WORKSPACE_DIR=".pxis"
 ensure_dir "$WORKSPACE_DIR"
 ensure_dir "$WORKSPACE_DIR/components"
 ensure_dir "$WORKSPACE_DIR/generated"
@@ -53,7 +53,7 @@ add_component() {
     if [[ -f "$override_path" ]]; then
         log "  → Using override: $component"
         cp "$override_path" "$WORKSPACE_DIR/components/${component}.tex"
-        echo "\\input{workspace/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
+        echo "\\input{$WORKSPACE_DIR/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
         return
     fi
     
@@ -71,7 +71,7 @@ add_component() {
     cp "$component_path" "$WORKSPACE_DIR/components/${component}.tex"
     
     # Add to preset.tex
-    echo "\\input{workspace/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
+    echo "\\input{$WORKSPACE_DIR/components/${component}}" >> "$WORKSPACE_DIR/preset.tex"
 }
 
 # Function to add package group
@@ -86,7 +86,7 @@ add_package() {
     
     log "  → Adding package: $package"
     cp "$package_path" "$WORKSPACE_DIR/components/${package}.tex"
-    echo "\\input{workspace/components/${package}}" >> "$WORKSPACE_DIR/preset.tex"
+    echo "\\input{$WORKSPACE_DIR/components/${package}}" >> "$WORKSPACE_DIR/preset.tex"
 }
 
 # Get components list
@@ -139,7 +139,7 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
             case "$item" in
                 cover)
                     # Generate or copy cover
-                    local cover_type="${CONFIG_cover_type:-generated}"
+                    cover_type="${CONFIG_cover_type:-generated}"
                     
                     if [[ "$cover_type" == "pdf" ]]; then
                         local pdf_file="${CONFIG_cover_pdf_file:-cover.pdf}"
@@ -150,13 +150,13 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                         fi
                     elif [[ "$cover_type" == "generated" ]]; then
                         log "  → Generating cover page"
-                        bash "$WORKSPACE_ROOT/scripts/generate/gen-cover.sh" "workspace.yml"
+                        bash "$WORKSPACE_ROOT/scripts/generator/cover.sh" "workspace.yml"
                     fi
                     ;;
                     
                 copyright)
                     log "  → Generating copyright page"
-                    bash "$WORKSPACE_ROOT/scripts/generate/gen-copyright.sh" "workspace.yml"
+                    bash "$WORKSPACE_ROOT/scripts/generator/copyright.sh" "workspace.yml"
                     ;;
                     
                 title)
@@ -174,8 +174,8 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
                     
                 *)
                     # Copy other frontmatter
-                    local fm_file="$WORKSPACE_ROOT/common/frontmatter/${item}.tex"
-                    local custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
+                    fm_file="$WORKSPACE_ROOT/common/frontmatter/${item}.tex"
+                    custom_fm="$CUSTOM_DIR/frontmatter/${item}.tex"
                     
                     if [[ -f "$custom_fm" ]]; then
                         log "  → Using custom $item"
@@ -191,7 +191,6 @@ if [[ "$PROJECT_TYPE" == "book" ]]; then
         done
     fi
 fi
-
 # Update hyperref with metadata
 {
     echo ""
@@ -228,6 +227,6 @@ BUILD_DATE=$(get_build_date)
 } >> "$WORKSPACE_DIR/preset.tex"
 
 log "Sync completed successfully!"
-info "Generated: workspace/preset.tex"
+info "Generated: $WORKSPACE_DIR/preset.tex"
 info "Version: $VERSION"
 info "Build date: $BUILD_DATE"

@@ -196,24 +196,33 @@ EOF
     ensure_dir figures
     ensure_dir references
     ensure_dir custom
-    
+    load_config "workspace.yml"
+    TITLE_ESC=$(get_config "project.title" "Untitled")
+    AUTHOR_ESC=$(get_config "project.author" "Author")
+    SUBJECT_ESC=$(get_config "project.subject" "")
+    KEYWORDS_ESC=$(get_config "project.keywords" "")
+    URL_ESC=$(get_config "project.url" "")
+    echo "CONFIG TITLE: ${TITLE_ESC}"
+    echo "CONFIG AUTHOR: ${AUTHOR_ESC}"
+    echo "CONFIG SUBJECT: ${SUBJECT_ESC}"
+    echo "CONFIG KEYWORDS: ${KEYWORDS_ESC}"
+    echo "CONFIG URL: ${URL_ESC}"
     log "Creating book structure..."
-    
     # Create main.tex for book
-    cat > main.tex <<'EOFMAIN'
+    cat > main.tex <<EOFMAIN
 \documentclass[12pt,oneside,openany]{book}
 
 % Metadata
-\newcommand{\PDFTitle}{\CONFIG{project.title}}
-\newcommand{\PDFTitleFront}{\CONFIG{project.title}}
-\newcommand{\PDFCoverTitle}{\CONFIG{project.title}}
-\newcommand{\PDFSubject}{\CONFIG{project.subject}}
-\newcommand{\PDFKeywords}{\CONFIG{project.keywords}}
-\newcommand{\PDFAuthor}{\CONFIG{project.author}}
-\newcommand{\PDFURL}{\CONFIG{project.url}}
+\newcommand{\PDFTitle}{$TITLE_ESC}
+\newcommand{\PDFTitleFront}{$TITLE_ESC}
+\newcommand{\PDFCoverTitle}{$TITLE_ESC}
+\newcommand{\PDFSubject}{$SUBJECT_ESC}
+\newcommand{\PDFKeywords}{$KEYWORDS_ESC}
+\newcommand{\PDFAuthor}{$AUTHOR_ESC}
+\newcommand{\PDFURL}{$URL_ESC}
 
 % Import workspace components (will be synced)
-\input{workspace/preset}
+\input{.pxis/preset}
 
 \begin{document}
 
@@ -306,7 +315,7 @@ EOF
 \date{\today}
 
 % Import workspace components (will be synced)
-\input{workspace/preset}
+\input{.pxis/preset}
 
 \addbibresource{references/main.bib}
 
@@ -462,11 +471,3 @@ See copyright information in the document.
 EOFREADME
 
 log "Project initialized successfully!"
-info "Next steps:"
-info "  1. Add workspace as submodule (if not already):"
-info "     git submodule add https://github.com/papyrxis/workspace.git workspace"
-info "  2. Edit workspace.yml to configure your project"
-info "  3. Run 'make' to build"
-info ""
-info "Or if workspace already exists:"
-info "  make"
