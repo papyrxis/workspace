@@ -95,6 +95,16 @@ parse_build_args() {
                 build_usage
                 exit 0
                 ;;
+           -s|--source)
+                [[ $# -lt 2 ]] && error "Missing value for $1"
+                SOURCE="$2"
+                shift 2
+                ;;
+
+            --source=*)
+                SOURCE="${1#*=}"
+                shift
+                ;;
             *.tex)
                 SOURCE="$1"
                 shift
