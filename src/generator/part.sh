@@ -13,52 +13,42 @@ source "$SCRIPT_DIR/bootstrap.sh"
 
 main() {
     bootstrap_paths
-    
     parse_part_args "$@"
-    
     derive_context
     validate_part_context
-    
+
     check_dir_exists "$PART_DIR" && error "Part already exists: $PART_DIR"
-    
+
     log "Creating part $PART: $TITLE"
-    
     ensure_dir "$PART_DIR"
-    
+
     generate_part_file
-    
-    success "Created: $PART_DIR/part$PADDED_PART.tex"
+
+    success "Created: $PART_DIR/part${PADDED_PART}.tex"
     info ""
-    info "Next steps:"
-    info "  1. Add to main.tex:"
-    info "     \\input{$PART_DIR/part$PADDED_PART}"
-    info "  2. Generate chapters:"
-    info "     bash workspace/src/generator/chapter.sh -p $PART -c 1 -t \"Chapter Title\""
+    info "Add to main.tex:"
+    info "  \\input{$PART_DIR/part${PADDED_PART}}"
+    info ""
+    info "Then add chapters:"
+    info "  make chapter ARGS='-p $PART -c 1 -t \"Chapter Title\"'"
 }
 
 generate_part_file() {
-    local part_file="$PART_DIR/part$PADDED_PART.tex"
-    
+    local part_file="$PART_DIR/part${PADDED_PART}.tex"
+
     cat > "$part_file" <<EOF
 \\part{$TITLE}
-\\label{part:part$PADDED_PART}
+\\label{part:part${PADDED_PART}}
 
 \\begin{partintro}
-\\lettrine[lines=3]{T}{his} is Part $PART of the book.
-
-$(if [[ -n "$DESCRIPTION" ]]; then
-    echo "$DESCRIPTION"
-else
-    echo "Overview of what this part covers and why it matters."
-fi)
+$(if [[ -n "$DESCRIPTION" ]]; then echo "$DESCRIPTION"
+  else echo "An overview of what this part covers."; fi)
 
 \\vspace{1em}
 
-\\textbf{In this part:}
+\\textbf{Chapters in this part:}
 \\begin{itemize}
-\\item Chapter 1: Introduction
-\\item Chapter 2: Main concepts
-\\item Chapter 3: Advanced topics
+\\item Chapter 1: ...
 \\end{itemize}
 \\end{partintro}
 EOF

@@ -4,54 +4,50 @@ set -euo pipefail
 
 init_workspace() {
     ensure_dir "$TARGET_DIR"
-    cd "$TARGET_DIR" || error "Failed to enter $TARGET_DIR"
-    
+    cd "$TARGET_DIR" || error "Cannot enter: $TARGET_DIR"
+
     if check_workspace_file; then
-        info "workspace.yml already exists, loading existing config"
+        info "workspace.yml already exists — loading"
         load_config "$WORKSPACE_FILE"
-       
-        TYPE=$(get_config "project.type" "$TYPE")
-        CATEGORY=$(get_config "project.category" "$CATEGORY")
-        TITLE=$(get_config "project.title" "$TITLE")
-        AUTHOR=$(get_config "project.author" "$AUTHOR")
-        EMAIL=$(get_config "project.email" "$EMAIL")
-        URL=$(get_config "project.url" "$URL")
-        SUBTITLE=$(get_config "project.subtitle" "$SUBTITLE")
-        SUBJECT=$(get_config "project.subject" "$SUBJECT")
-        KEYWORDS=$(get_config "project.keywords" "$KEYWORDS")
-    else 
+    else
         generate_workspace_file
-        setup_project_structure
+        setup_structure
     fi
+
     setup_main_tex
     setup_makefile
+    setup_gitignore
+    setup_github_workflows
 }
 
 generate_workspace_file() {
-    log "Generating workspace.yml..."
-    
+    log "Creating workspace.yml..."
+
+    local src_file="${SOURCE:-main.tex}"
+
     cat > workspace.yml <<EOF
 project:
   type: $TYPE
-  category: $CATEGORY
   title: "$TITLE"
   author: "$AUTHOR"
   email: "${EMAIL:-}"
-  date: "auto"
   url: "$URL"
 
 build:
   engine: pdflatex
   bibtex: biber
   output_dir: build
-  watch_mode: true
+  source: "$src_file"
 
 version:
   source: git
-  format: "v{major}.{minor}.{patch}"
   fallback: "dev"
 
 components:
+EOF
+
+    if [[ "$TYPE" == "book" ]]; then
+        cat >> workspace.yml <<EOF
   - fonts
   - math
   - graphics
@@ -60,10 +56,6 @@ components:
   - colors
   - layout
   - titles
-EOF
-
-    if [[ "$TYPE" == "book" ]]; then
-        cat >> workspace.yml <<EOF
   - pagestyles
   - env
   - index
@@ -72,32 +64,33 @@ EOF
   - boxes
   - commands/base
 
-features:
-  toc: true
-  index: true
-  bibliography: true
-  glossary: false
-  appendix: true
-
 frontmatter:
   - cover
   - title
   - copyright
   - preface
   - introduction
+
 EOF
     else
         cat >> workspace.yml <<EOF
+  - fonts
+  - math
+  - graphics
+  - tables
+  - hyperref
+  - colors
+  - layout
   - bibliography
   - code
   - commands/base
+
 EOF
     fi
-    
-    cat >> workspace.yml <<EOF
 
+    cat >> workspace.yml <<EOF
 colors:
-  scheme: $CATEGORY
+  scheme: technical
 
 copyright:
   type: cc-by-sa
@@ -105,32 +98,22 @@ copyright:
   holder: "$AUTHOR"
 
 overrides:
-  components_dir: "configs"
-  allow:
-    - colors.tex
-    - commands/base.tex
-EOF
-
-    if [[ "$TYPE" == "book" ]]; then
-        cat >> workspace.yml <<EOF
-    - pagestyles.tex
-    - frontmatter/title.tex
+  dir: "configs"
+  # mode: replace   (default) — your file replaces the default component
+  # mode: extend    — default component first, then your additions appended
 
 cover:
   type: generated
   generated:
     style: modern
-    title_size: large
-    include_author: true
 EOF
-    fi
-    
-    success "Created workspace.yml"
+
+    success "workspace.yml created"
 }
 
-setup_project_structure() {
-    log "Setting up project structure..."
-    
+setup_structure() {
+    log "Creating directory structure..."
+
     if [[ "$TYPE" == "book" ]]; then
         ensure_dir parts/part01
         ensure_dir frontmatter
@@ -138,51 +121,57 @@ setup_project_structure() {
     else
         ensure_dir sections
     fi
-    
+
     ensure_dir figures
     ensure_dir references
     ensure_dir configs
-    
-    success "Created directory structure"
+
+    success "Directories ready"
 }
 
 setup_main_tex() {
-    if [[ -f "main.tex" ]]; then
-        info "main.tex already exists, skipping"
+    local src_file="${SOURCE:-main.tex}"
+
+    if [[ -f "$src_file" ]]; then
+        info "$src_file already exists — skipping"
         return 0
     fi
-    
-    log "Creating main.tex..."
-    
-    local template_file
+
+    log "Creating $src_file..."
+
     if [[ "$TYPE" == "book" ]]; then
-        template_file="$WORKSPACE_ROOT/template/books/main.tex"
+        local template="$WORKSPACE_ROOT/template/books/main.tex"
+        if [[ -f "$template" ]]; then
+            sed -e "s|{{TITLE}}|$TITLE|g" \
+                -e "s|{{AUTHOR}}|$AUTHOR|g" \
+                -e "s|{{EMAIL}}|${EMAIL:-}|g" \
+                -e "s|{{URL}}|$URL|g" \
+                "$template" > "$src_file"
+        else
+            create_book_tex "$src_file"
+        fi
     else
-        template_file="$WORKSPACE_ROOT/template/article/single-column/main.tex"
+        local template="$WORKSPACE_ROOT/template/article/main.tex"
+        if [[ -f "$template" ]]; then
+            sed -e "s|{{TITLE}}|$TITLE|g" \
+                -e "s|{{AUTHOR}}|$AUTHOR|g" \
+                -e "s|{{EMAIL}}|${EMAIL:-}|g" \
+                -e "s|{{URL}}|$URL|g" \
+                "$template" > "$src_file"
+        else
+            create_article_tex "$src_file"
+        fi
     fi
-    
-    if [[ -f "$template_file" ]]; then
-        sed -e "s|{{TITLE}}|$TITLE|g" \
-            -e "s|{{AUTHOR}}|$AUTHOR|g" \
-            -e "s|{{EMAIL}}|$EMAIL|g" \
-            -e "s|{{URL}}|$URL|g" \
-            -e "s|{{SUBJECT}}|$SUBJECT|g" \
-            -e "s|{{KEYWORDS}}|$KEYWORDS|g" \
-            "$template_file" > main.tex
-        success "Created main.tex from template"
-    else
-        warn "Template not found, creating basic main.tex"
-        create_basic_main_tex
-    fi
+
+    success "Created: $src_file"
 }
 
-create_basic_main_tex() {
-    if [[ "$TYPE" == "book" ]]; then
-        cat > main.tex <<'EOF'
+create_book_tex() {
+    local file="$1"
+    cat > "$file" <<'EOF'
 \documentclass[12pt,oneside,openany]{book}
 
 \newcommand{\PDFTitle}{Title}
-\newcommand{\PDFTitleFront}{Title}
 \newcommand{\PDFAuthor}{Author}
 \newcommand{\PDFURL}{URL}
 
@@ -191,70 +180,147 @@ create_basic_main_tex() {
 \begin{document}
 
 \frontmatter
-\frontmatterpagenumber
-
+\input{frontmatter/cover}
 \input{frontmatter/title}
 \input{frontmatter/copyright}
 
 \tableofcontents
 
 \mainmatter
-\mainmatterpagenumber
-
 \input{parts/part01/part01}
 
 \backmatter
-
 \printbibliography
 \printindex
 
 \end{document}
 EOF
-    else
-        cat > main.tex <<'EOF'
+}
+
+create_article_tex() {
+    local file="$1"
+    cat > "$file" <<'EOF'
 \documentclass[12pt,a4paper]{article}
 
 \input{.pxis/preset}
 
-\title{Title}
-\author{Author}
-\date{\today}
+\addbibresource{references/main.bib}
 
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge\bfseries Title\par}
+  \vspace{0.5cm}
+  {\large Subtitle (optional)\par}
+  \vspace{2cm}
+  {\large Author Name\par}
+  {\small \texttt{email@example.com}\par}
+  \vfill
+  {\small \today\par}
+\end{titlepage}
 
 \begin{abstract}
 Abstract here.
 \end{abstract}
 
+\paragraph{Keywords} keyword1, keyword2, keyword3
+
+\tableofcontents
+
 \section{Introduction}
 
-Content here.
+\section{Problem Statement}
+
+\section{Background}
+
+\section{Approach}
+
+\section{Analysis}
+
+\section{Example}
+
+\section{Discussion}
+
+\section{Conclusion}
 
 \printbibliography
 
 \end{document}
 EOF
-    fi
 }
 
 setup_makefile() {
     if [[ -f "Makefile" ]]; then
-        info "Makefile already exists, skipping"
+        info "Makefile exists — skipping"
         return 0
     fi
-    
+
     log "Creating Makefile..."
-    
-    local template_makefile="$WORKSPACE_ROOT/Makefile"
-    if [[ -f "$template_makefile" ]]; then
-        cp "$template_makefile" Makefile
-        success "Created Makefile"
+    local tmpl="$WORKSPACE_ROOT/Makefile"
+    if [[ -f "$tmpl" ]]; then
+        cp "$tmpl" Makefile
+        success "Makefile created"
     else
         warn "Makefile template not found"
     fi
 }
 
-export -f init_workspace generate_workspace_file setup_project_structure
-export -f setup_main_tex create_basic_main_tex setup_makefile
+setup_gitignore() {
+    if [[ -f ".gitignore" ]]; then
+        info ".gitignore exists — skipping"
+        return 0
+    fi
+
+    log "Creating .gitignore..."
+    cat > .gitignore <<'EOF'
+# LaTeX build artifacts
+build/
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.run.xml
+*.bcf
+
+# Editor
+*.swp
+*.swo
+.DS_Store
+EOF
+    success ".gitignore created"
+}
+
+setup_github_workflows() {
+    ensure_dir ".github/workflows"
+
+    # Only copy if not already present
+    local wf_src="$WORKSPACE_ROOT/template/workflows"
+    if [[ ! -d "$wf_src" ]]; then
+        return 0
+    fi
+
+    for wf in "$wf_src"/*.yml; do
+        local name
+        name=$(basename "$wf")
+        if [[ ! -f ".github/workflows/$name" ]]; then
+            log "  · workflow: $name"
+            cp "$wf" ".github/workflows/$name"
+        else
+            info "  · workflow $name exists — skipping"
+        fi
+    done
+}
+
+export -f init_workspace generate_workspace_file setup_structure
+export -f setup_main_tex create_book_tex create_article_tex
+export -f setup_makefile setup_gitignore setup_github_workflows

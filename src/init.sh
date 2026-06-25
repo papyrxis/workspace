@@ -8,58 +8,98 @@ source "$SCRIPT_DIR/context.sh"
 source "$SCRIPT_DIR/utils/logger.sh"
 source "$SCRIPT_DIR/utils/utils.sh"
 source "$SCRIPT_DIR/utils/gitinfo.sh"
-source "$SCRIPT_DIR/utils/messages_builder.sh"
 source "$SCRIPT_DIR/parser.sh"
 source "$SCRIPT_DIR/loader.sh"
 source "$SCRIPT_DIR/checker.sh"
-source "$SCRIPT_DIR/args.sh"
 source "$SCRIPT_DIR/bootstrap.sh"
 source "$SCRIPT_DIR/setup/workspace.sh"
 
 main() {
     bootstrap_paths
     bootstrap_defaults
-    
-    parse_init_args "$@"
-    
     bootstrap_git_info
     bootstrap_version
-    
-    if [[ "$INTERACTIVE" == "true" ]]; then
-        interactive_mode
-    fi
-    
-    validate_init_context
-    
-    log "Initializing $TYPE project: $NAME"
-    log "Category: $CATEGORY"
+
+    interactive_init
+
+    log "Initializing $TYPE project: $TITLE"
     log "Author: $AUTHOR"
-    [[ -n "$EMAIL" ]] && log "Email: $EMAIL"
-    log "URL: $URL"
-    
+    [[ -n "$URL" ]] && log "URL: $URL"
+
     init_workspace
-    
-    log "Project initialized successfully!"
-    info ""
-    info "Next steps:"
-    info "  1. Review and edit workspace.yml"
-    info "  2. Run 'make' to build"
-    info "  3. Run 'make watch' for development"
-    info ""
-    info "Files created:"
-    info "  - workspace.yml (configuration)"
-    info "  - main.tex (document entry point)"
-    info "  - Makefile (build automation)"
-    info "  - README.md (project documentation)"
+
+    success "Project ready."
+    echo ""
+    echo "  Next steps:"
+    echo "    make sync   — generate .pxis/ from workspace.yml"
+    echo "    make        — build your document"
+    echo "    make watch  — auto-rebuild on save"
+    echo ""
 }
 
-interactive_mode() {
-    read -p "Project name [$NAME]: " input && [[ -n "$input" ]] && NAME="$input"
-    read -p "Document title [$TITLE]: " input && [[ -n "$input" ]] && TITLE="$input"
-    read -p "Author name [$AUTHOR]: " input && [[ -n "$input" ]] && AUTHOR="$input"
-    read -p "Author email [$EMAIL]: " input && [[ -n "$input" ]] && EMAIL="$input"
-    read -p "Project URL [$URL]: " input && [[ -n "$input" ]] && URL="$input"
-    read -p "Category [$CATEGORY]: " input && [[ -n "$input" ]] && CATEGORY="$input"
+interactive_init() {
+    echo ""
+    echo "  ─────────────────────────────────"
+    echo "   Workspace Init"
+    echo "  ─────────────────────────────────"
+    echo ""
+
+    # Type
+    echo "  What are you writing?"
+    echo "    1) book"
+    echo "    2) article / paper"
+    printf "  Choice [1]: "
+    read -r choice
+    case "${choice:-1}" in
+        2|article|paper) TYPE="article" ;;
+        *) TYPE="book" ;;
+    esac
+    echo ""
+
+    # Title
+    local default_title="${TITLE:-Untitled}"
+    printf "  Title [%s]: " "$default_title"
+    read -r input
+    TITLE="${input:-$default_title}"
+
+    # Author
+    local default_author="${AUTHOR:-Author Name}"
+    printf "  Author [%s]: " "$default_author"
+    read -r input
+    AUTHOR="${input:-$default_author}"
+
+    # Email (optional)
+    local default_email="${EMAIL:-}"
+    if [[ -n "$default_email" ]]; then
+        printf "  Email [%s]: " "$default_email"
+    else
+        printf "  Email (optional): "
+    fi
+    read -r input
+    EMAIL="${input:-$default_email}"
+
+    # URL (optional)
+    local default_url="${URL:-}"
+    if [[ -n "$default_url" ]]; then
+        printf "  Repository URL [%s]: " "$default_url"
+    else
+        printf "  Repository URL (optional): "
+    fi
+    read -r input
+    URL="${input:-$default_url}"
+
+    # Main source file
+    if [[ "$TYPE" == "book" ]]; then
+        printf "  Main .tex filename [main.tex]: "
+        read -r input
+        local src="${input:-main.tex}"
+        src="${src%.tex}.tex"
+        SOURCE="$src"
+    else
+        SOURCE="main.tex"
+    fi
+
+    echo ""
 }
 
 main "$@"

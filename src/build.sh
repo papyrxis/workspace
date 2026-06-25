@@ -18,19 +18,24 @@ source "$SCRIPT_DIR/bootstrap.sh"
 main() {
     bootstrap_paths
     bootstrap_defaults
-    
+
+    # Parse CLI args (may set SOURCE, ENGINE, etc.)
     parse_build_args "$@"
-    
+
+    # Load workspace.yml — sets SOURCE from build.source if not already set
     load_from_config || true
-    
+
+    # Final SOURCE fallback
+    SOURCE="${SOURCE:-main.tex}"
+
     bootstrap_version
     derive_context
-    
+
     check_latex "$ENGINE"
     check_bibtex "$BIBTEX" || true
-    
+
     validate_build_context
-    
+
     if [[ "$WATCH" == "true" ]]; then
         watch_mode
     else
@@ -39,47 +44,38 @@ main() {
 }
 
 build_document() {
-    log "Building $SOURCE with $ENGINE..."
-    
-    if [[ "$CLEAN" == "true" ]]; then
-        log "Cleaning build directory..."
-        rm -rf "${OUTPUT_DIR:?}"/*
-    fi
-    
+    log "Building: $SOURCE → $OUTPUT_DIR/$PDF_NAME"
+    log "Engine: $ENGINE | Version: $VERSION"
+
+    [[ "$CLEAN" == "true" ]] && { log "Cleaning..."; rm -rf "${OUTPUT_DIR:?}"/*; }
+
     ensure_dir "$OUTPUT_DIR"
-    
+
     export TEXINPUTS=".:./workspace:"
     export PROJECT_VERSION="$VERSION"
     export BUILD_DATE="$BUILD_DATE"
-    
-    if [[ "$QUIET" != "true" ]]; then
-        log "Version: $VERSION"
-        log "Build date: $BUILD_DATE"
-    fi
-    
-    run_latex_pass "1/3: Initial compilation"
-    
+
+    run_latex_pass "1/3"
+
     if needs_bibliography; then
         run_bibliography
-        run_latex_pass "2/3: Processing citations"
+        run_latex_pass "2/3"
     fi
-    
-    run_latex_pass "3/3: Final compilation"
-    
+
+    run_latex_pass "3/3"
+
     check_build_success
 }
 
 run_latex_pass() {
-    local pass_name="$1"
-    
-    [[ "$QUIET" != "true" ]] && log "Pass $pass_name..."
-    
-    local output_redirect=""
+    local pass="$1"
+    [[ "$QUIET" != "true" ]] && log "Pass $pass..."
+
     if [[ "$QUIET" == "true" ]]; then
-        output_redirect=">/dev/null 2>&1"
+        "$ENGINE" -output-directory="$OUTPUT_DIR" -interaction=nonstopmode "$SOURCE" >/dev/null 2>&1 || true
+    else
+        "$ENGINE" -output-directory="$OUTPUT_DIR" -interaction=nonstopmode "$SOURCE" || true
     fi
-    
-    eval "$ENGINE -output-directory='$OUTPUT_DIR' -interaction=nonstopmode '$SOURCE' $output_redirect" || true
 }
 
 needs_bibliography() {
@@ -88,103 +84,71 @@ needs_bibliography() {
 
 run_bibliography() {
     [[ "$QUIET" != "true" ]] && log "Running $BIBTEX..."
-    
-    local output_redirect=""
     if [[ "$QUIET" == "true" ]]; then
-        output_redirect=">/dev/null 2>&1"
+        (cd "$OUTPUT_DIR" && "$BIBTEX" "$BASENAME" >/dev/null 2>&1) || true
+    else
+        (cd "$OUTPUT_DIR" && "$BIBTEX" "$BASENAME") || true
     fi
-    
-    eval "(cd '$OUTPUT_DIR' && $BIBTEX '$BASENAME' $output_redirect)" || true
 }
 
 check_build_success() {
     if [[ -f "$OUTPUT_DIR/$PDF_NAME" ]]; then
-        success "Build successful!"
-        
-        if [[ "$QUIET" != "true" ]]; then
-            info "Output: $OUTPUT_DIR/$PDF_NAME"
-            
-            local size
-            size=$(du -h "$OUTPUT_DIR/$PDF_NAME" | cut -f1)
-            info "Size: $size"
-        fi
-        
+        local size
+        size=$(du -h "$OUTPUT_DIR/$PDF_NAME" | cut -f1)
+        success "Done: $OUTPUT_DIR/$PDF_NAME ($size)"
         return 0
     else
-        error "Build failed. Check $OUTPUT_DIR/${BASENAME}.log for details."
+        error "Build failed. Check $OUTPUT_DIR/${BASENAME}.log"
     fi
 }
 
 watch_mode() {
-    log "Entering watch mode (Ctrl+C to stop)..."
-    log "Watching: $SOURCE and related files"
-    
+    log "Watch mode — Ctrl+C to stop"
     build_document || true
-    
-    local watch_tool
-    watch_tool=$(check_watch_tool)
-    
-    case "$watch_tool" in
-        inotifywait)
-            watch_with_inotifywait
-            ;;
-        fswatch)
-            watch_with_fswatch
-            ;;
-        polling)
-            watch_with_polling
-            ;;
+
+    local tool
+    tool=$(check_watch_tool)
+
+    case "$tool" in
+        inotifywait) watch_inotify ;;
+        fswatch)     watch_fswatch ;;
+        *)           watch_poll ;;
     esac
 }
 
-watch_with_inotifywait() {
-    log "Using inotifywait for file monitoring"
-    
+watch_inotify() {
     while true; do
-        inotifywait -e modify -e create -e delete \
+        inotifywait -e modify,create,delete \
             --exclude '\.git|build/|\.swp|\.aux|\.log' \
             -r . 2>/dev/null || true
-        
         log "Change detected, rebuilding..."
         build_document || true
-        log "Waiting for changes..."
     done
 }
 
-watch_with_fswatch() {
-    log "Using fswatch for file monitoring"
-    
+watch_fswatch() {
     fswatch -o -e '\.git' -e 'build/' -e '\.swp' -e '\.aux' -e '\.log' . | \
     while read -r; do
         log "Change detected, rebuilding..."
         build_document || true
-        log "Waiting for changes..."
     done
 }
 
-watch_with_polling() {
-    log "Using polling for file monitoring"
-    warn "Install inotifywait or fswatch for better performance"
-    
-    get_checksum() {
+watch_poll() {
+    warn "Install inotifywait or fswatch for better watch performance"
+    get_sum() {
         find . -type f \( -name "*.tex" -o -name "*.bib" \) \
             -not -path "./build/*" -not -path "./.git/*" \
             -exec md5sum {} \; 2>/dev/null | md5sum | cut -d' ' -f1
     }
-    
-    local last_hash
-    last_hash=$(get_checksum)
-    
+    local last; last=$(get_sum)
     while true; do
         sleep 2
-        local current_hash
-        current_hash=$(get_checksum)
-        
-        if [[ "$current_hash" != "$last_hash" ]]; then
+        local cur; cur=$(get_sum)
+        if [[ "$cur" != "$last" ]]; then
             log "Change detected, rebuilding..."
             build_document || true
-            last_hash=$(get_checksum)
-            log "Waiting for changes..."
+            last="$cur"
         fi
     done
 }
