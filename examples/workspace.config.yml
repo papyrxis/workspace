@@ -1,87 +1,75 @@
-# Papyrxis Workspace Configuration Reference
-# Complete example showing all available options
-# Copy and modify for your project
+# workspace.yml — full reference
+# Copy and adjust for your project.
+# Run "make sync" after any changes here.
 
 project:
-  type: book                    # Required: book or article
-  category: technical           # Required: technical or academic
-  
-  title: "Your Book Title"      # Required: Document title
-  author: "Author Name"         # Required: Author name
-  email: "author@example.com"   # Optional: Author email
-  url: "https://github.com/user/repo"  # Optional: Project URL
+  type: book          # book | article
+  title: "My Book"
+  author: "Your Name"
+  email: "you@example.com"
+  url: "https://github.com/user/repo"
 
 build:
-  engine: pdflatex              # LaTeX engine: pdflatex, xelatex, lualatex
-  bibtex: biber                 # Bibliography: biber or bibtex
-  output_dir: build             # Output directory for build artifacts
-  watch_mode: true              # Enable watch mode by default
+  engine: pdflatex    # pdflatex | xelatex | lualatex
+  bibtex: biber
+  output_dir: build
+  source: main.tex    # default entry point; change for volumes
 
 version:
-  source: git                   # Version source: git or manual
-  format: "v{major}.{minor}.{patch}"  # Format for git tags
-  fallback: "dev"               # Fallback if git not available
+  source: git         # reads from git tags
+  fallback: "dev"
 
+# ── Components ────────────────────────────────────────────────
+# For books, the defaults are already sensible.
+# You can list explicitly to control order or reduce size.
 components:
-  - fonts                       # Font configuration
-  - math                        # Math packages
-  - graphics                    # Graphics and figures
-  - tables                      # Table formatting
-  - hyperref                    # PDF links and metadata
-  - code                        # Code listings
-  - bibliography                # Bibliography support
-  - colors                      # Color schemes
-  - layout                      # Page layout
-  - titles                      # Section titles
-  - pagestyles                  # Headers and footers (books)
-  - env                         # Custom environments
-  - boxes                       # Colored boxes
-  - index                       # Index generation
-  - commands/base               # Base commands
+  - fonts
+  - math
+  - graphics
+  - tables
+  - hyperref
+  - colors
+  - layout
+  - titles
+  - pagestyles     # remove for articles
+  - env
+  - index          # remove for articles
+  - bibliography
+  - code
+  - boxes
+  - commands/base
 
-features:
-  toc: true                     # Table of contents
-  index: true                   # Index generation
-  bibliography: true            # Bibliography
-  glossary: false               # Glossary (not yet implemented)
-  appendix: true                # Appendix
-
+# ── Frontmatter (books only) ──────────────────────────────────
 frontmatter:
-  - cover                       # Cover page (PDF or generated)
-  - title                       # Title page
-  - copyright                   # Copyright page
-  - preface                     # Preface
-  - introduction                # Introduction
+  - cover
+  - title
+  - copyright
+  - preface
+  - introduction
 
+# ── Colors ───────────────────────────────────────────────────
 colors:
-  scheme: technical             # Predefined: technical, academic
-  
-  custom:                       # Custom colors (if scheme: custom)
-    primary: "30,40,50"         # RGB values
-    accent: "0,86,179"
-    text: "33,37,41"
+  scheme: technical   # technical | academic
 
+# ── Copyright ─────────────────────────────────────────────────
 copyright:
-  type: cc-by-sa                # License: cc-by-sa, cc-by, cc-by-nc, 
-                                #          cc-by-nc-sa, mit, apache, custom, none
-  year: "auto"                  # auto uses current year
-  holder: "Author Name"         # Copyright holder
-  custom_text: null             # Custom license text (if type: custom)
+  type: cc-by-sa      # cc-by-sa | cc-by | cc-by-nc | mit | none
+  year: "auto"
+  holder: "Your Name"
 
+# ── Cover (books only) ────────────────────────────────────────
 cover:
-  type: generated               # Cover type: generated, pdf, or none
-  pdf_file: "cover.pdf"         # PDF file (if type: pdf)
-  
-  generated:                    # Generated cover settings (if type: generated)
-    style: modern               # Style: modern, classic, or minimal
-    title_size: large           # Size: small, medium, or large
-    include_author: true        # Show author on cover
+  type: generated     # generated | pdf | none
+  generated:
+    style: modern     # modern | classic | minimal
 
+# ── Overrides ─────────────────────────────────────────────────
+# Place your custom .tex files in the directory below.
+# Any file matching a component name replaces that component.
+# Files not matching any component are appended at the end.
+#
+# mode: replace (default) — your file replaces the default
+# mode: extend            — default first, your additions appended
 overrides:
-  components_dir: "configs"     # Directory for custom components
-  
-  allow:                        # List of components that can be overridden
-    - colors.tex                # Only listed files can be overridden
-    - commands/base.tex
-    - pagestyles.tex
-    - frontmatter/title.tex
+  dir: "configs"
+  mode: replace

@@ -1,1 +1,25 @@
-\usepackage[backend=biber,style=authoryear]{biblatex}
+% Bibliography configuration
+% For books: footnote citations with endnotes per chapter
+% For articles: numeric citations [1], [2]
+%
+% Usage:
+%   \cite{key}        — inline citation
+%   \footcite{key}    — footnote citation (books, preferred)
+%   \textcite{key}    — "Author (year)" in running text
+%   \printbibliography — print reference list
+
+\usepackage[
+  backend=biber,
+  style=authoryear,       % change to numeric for articles
+  sorting=nyt,            % name, year, title
+  maxcitenames=2,
+  ibidtracker=constrict,
+  autocite=footnote       % \autocite{} → footnote by default
+]{biblatex}
+
+% Compact bibliography list
+\setlength{\bibitemsep}{0.5\baselineskip}
+
+% URL line breaks
+\setcounter{biburllcpenalty}{7000}
+\setcounter{biburlucpenalty}{8000}

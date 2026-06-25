@@ -1,0 +1,93 @@
+\documentclass[12pt,a4paper]{article}
+
+\input{.pxis/preset}
+
+\addbibresource{references/main.bib}
+
+% ─── Metadata ─────────────────────────────────────────────────
+\title{%
+  {{TITLE}}%
+  \\ \large Subtitle (optional)%
+}
+\author{%
+  {{AUTHOR}}\\
+  \small\texttt{{{EMAIL}}}
+}
+\date{\today}
+
+% ─── Document ─────────────────────────────────────────────────
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+% ─── Abstract ─────────────────────────────────────────────────
+\begin{abstract}
+Write a concise abstract here. One paragraph, no citations,
+no jargon that isn't defined. State the problem, the approach,
+and the main finding.
+\end{abstract}
+
+\paragraph{Keywords} keyword one; keyword two; keyword three
+
+% ─── Contents (remove for short papers) ──────────────────────
+% \tableofcontents
+
+% ─────────────────────────────────────────────────────────────
+\section{Introduction}
+
+State the problem plainly. Why does it matter? What is the
+reader going to get from this? End with a short outline
+of what follows.
+
+% ─────────────────────────────────────────────────────────────
+\section{Problem Statement}
+
+Be precise. Define terms. State what you are solving, and
+explicitly what you are \emph{not} solving.
+
+% ─────────────────────────────────────────────────────────────
+\section{Background}
+
+Cover the prior work and concepts the reader needs to follow
+the rest of the paper. Keep it tight --- only what is necessary.
+Cite with \autocite{} for footnote references, or
+\textcite{} for in-text author mentions.
+
+% ─────────────────────────────────────────────────────────────
+\section{Approach}
+
+Describe your method, model, or argument. Be specific enough
+that someone else could reproduce it.
+
+% ─────────────────────────────────────────────────────────────
+\section{Analysis}
+
+Work through the evidence, proof, or results. This is the
+core of the paper.
+
+% ─────────────────────────────────────────────────────────────
+\section{Example}
+
+A concrete, worked example. Code, trace, diagram, or case study.
+
+% ─────────────────────────────────────────────────────────────
+\section{Discussion}
+
+What do the results mean? What are the limits? What did you
+leave on the table?
+
+% ─────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+One paragraph. What was the problem, what did you do, what
+did you find. Future directions if relevant.
+
+% ─────────────────────────────────────────────────────────────
+\printbibliography
+
+% ─── Appendix (optional) ─────────────────────────────────────
+% \appendix
+% \section{Additional Material}
+
+\end{document}
