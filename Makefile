@@ -1,26 +1,30 @@
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_DATE ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
 WORKSPACE_ROOT := $(shell pwd)
-SRC_DIR := $(WORKSPACE_ROOT)/src
-WORKSPACE := workspace
+SRC_DIR        := $(WORKSPACE_ROOT)/src
 
-ifeq ($(shell [ -d "$(WORKSPACE)" ] && echo 1 || echo 0), 1)
-    WORKSPACE_SRC := $(WORKSPACE)/src
+ifeq ($(shell [ -d "workspace" ] && echo 1 || echo 0), 1)
+    WORKSPACE_SRC := workspace/src
 else
     WORKSPACE_SRC := $(SRC_DIR)
 endif
 
-all: sync build
+.PHONY: all build sync clean watch version part chapter help
+
+all: build
 
 sync:
 	@bash $(WORKSPACE_SRC)/sync.sh
 
-build: sync
+build:
 	@bash $(WORKSPACE_SRC)/build.sh
 
+watch:
+	@bash $(WORKSPACE_SRC)/build.sh -w
+
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "Cleaning..."
 	@rm -rf build/
 	@find . -type f \( \
 		-name "*.aux" -o -name "*.log" -o -name "*.out" \
@@ -29,14 +33,7 @@ clean:
 		-o -name "*.fls" -o -name "*.idx" -o -name "*.ilg" \
 		-o -name "*.ind" -o -name "*.run.xml" -o -name "*.bcf" \
 		\) -delete 2>/dev/null || true
-	@echo "✓ Clean complete"
-
-watch:
-	@bash $(WORKSPACE_SRC)/build.sh -w
-
-version:
-	@echo "Version: $(VERSION)"
-	@echo "Build date: $(BUILD_DATE)"
+	@echo "✓ Clean"
 
 part:
 	@bash $(WORKSPACE_SRC)/generator/part.sh $(ARGS)
@@ -44,40 +41,25 @@ part:
 chapter:
 	@bash $(WORKSPACE_SRC)/generator/chapter.sh $(ARGS)
 
-cover:
-	@bash $(WORKSPACE_SRC)/generator/cover.sh workspace.yml
-
-test:
-	@echo "Building document..."
-	@$(MAKE) clean >/dev/null 2>&1
-	@$(MAKE) build >/dev/null 2>&1 && echo "✓ Build successful" || echo "✗ Build failed"
+version:
+	@echo "Version:    $(VERSION)"
+	@echo "Build date: $(BUILD_DATE)"
 
 help:
-	@echo "Papyrxis Workspace - Build System"
 	@echo ""
-	@echo "MAIN TARGETS:"
-	@echo "  make            Build document (sync + build)"
-	@echo "  make sync       Sync workspace components from workspace.yml"
-	@echo "  make build      Build LaTeX document"
-	@echo "  make clean      Remove all build artifacts"
-	@echo "  make watch      Watch mode (auto-rebuild on changes)"
+	@echo "  Papyrxis Workspace"
+	@echo "  ──────────────────────────────────────"
 	@echo ""
-	@echo "GENERATORS:"
-	@echo "  make part ARGS='-n 2 -t \"Part Title\"'"
+	@echo "  make              Build document"
+	@echo "  make sync         Sync .pxis/ from workspace.yml"
+	@echo "  make watch        Auto-rebuild on save"
+	@echo "  make clean        Remove build artifacts"
+	@echo ""
+	@echo "  make part    ARGS='-n 2 -t \"Part Title\"'"
 	@echo "  make chapter ARGS='-p 1 -c 2 -t \"Chapter Title\"'"
-	@echo "  make cover      Generate cover page"
 	@echo ""
-	@echo "UTILITIES:"
-	@echo "  make version    Show version information"
-	@echo "  make test       Quick build test"
-	@echo "  make help       Show this help"
+	@echo "  make version      Show version info"
+	@echo "  make help         This message"
 	@echo ""
-	@echo "EXAMPLES:"
-	@echo "  make                                    # Build document"
-	@echo "  make watch                              # Auto-rebuild"
-	@echo "  make part ARGS='-n 1 -t \"Introduction\"'"
-	@echo "  make chapter ARGS='-p 1 -c 1 -t \"Getting Started\"'"
-	@echo ""
-	@echo "For more information: docs/getting-started.md"
 
 .DEFAULT_GOAL := all
