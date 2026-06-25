@@ -117,3 +117,4 @@ The included workflow builds your PDF and publishes a GitHub Release automatical
 A rolling pre-release draft is also built on every push to `main`.
 
 See `.github/workflows/` in your project after `init`.
+ 
