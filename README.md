@@ -1,221 +1,125 @@
 # Papyrxis Workspace
 
-A modular, extensible LaTeX workspace for technical books and academic papers. Not a framework. Not a package. Just well-organized components you can use.
+A LaTeX workspace for writing books and papers the way you want to write them.
+Not a framework, not magic — just organized components and a build system that stays out of the way.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+## What it does
 
-## Philosophy
+- Keeps LaTeX components modular so you can swap or extend anything
+- Builds PDFs with a single `make` command
+- Lets you override only what you need, without touching the rest
+- Handles versioning from git tags
+- Ships GitHub Actions workflows for publishing releases
 
-LaTeX is powerful but messy. Projects accumulate cruft. Templates multiply. Consistency suffers.
+## Requirements
 
-Papyrxis provides:
-- **Modularity**: Use what you need, ignore the rest
-- **Flexibility**: Override anything easily
-- **Standards**: IEEE, ACM, academic conventions built in
-- **Simplicity**: No magic, just organized TeX files
+- TeX Live (full) or MiKTeX
+- Bash 4+, Make, Git
+- Python 3 + PyYAML (`pip install pyyaml`)
 
-## Quick Start
-
-### Installation
-
-As a git submodule (recommended):
+## Starting a project
 
 ```bash
-mkdir my-book
-cd my-book
+mkdir my-book && cd my-book
 git init
 git submodule add https://github.com/papyrxis/workspace.git
-bash workspace/src/init.sh -t book --title "My Book"
-make
+bash workspace/src/init.sh
 ```
 
-Or direct clone:
-
-```bash
-git clone https://github.com/papyrxis/workspace.git my-book
-cd my-book
-bash src/init.sh -t book --title "My Book"
-make
-```
-
-### Create a Book
-
-```bash
-bash workspace/src/init.sh -t book --title "My Technical Book"
-make
-```
-
-### Create an Article
-
-```bash
-bash workspace/src/init.sh -t article --title "My Research Paper"
-make
-```
-
-## Features
-
-### For Books
-
-- Part/chapter structure
-- Front matter (title, preface, TOC)
-- Back matter (appendix, index, bibliography)
-- Custom page styles
-- Technical and academic presets
-- Version management
-- Watch mode for development
-
-### For Articles
-
-- Single and two-column layouts
-- IEEE/ACM formats
-- Technical and academic styles
-- Bibliography management
-- Theorem environments
-- Quick compilation
-
-### General
-
-- **Modular colors**: Define schemes, apply easily
-- **Modular commands**: Override or extend
-- **Smart layouts**: Responsive to content
-- **Build automation**: Make, watch, version
-- **Git integration**: Version from tags
-- **Comprehensive documentation**
-
-## Configuration
-
-Everything is configured through `workspace.yml`:
-
-```yaml
-project:
-  type: book
-  category: technical
-  title: "My Book"
-  author: "Your Name"
-
-components:
-  - fonts
-  - math
-  - graphics
-  - colors
-  - layout
-
-colors:
-  scheme: technical
-
-overrides:
-  allow:
-    - colors.tex
-    - commands/base.tex
-```
-
-Run `make sync` after editing to apply changes.
+That's it. The script asks a few questions and sets up everything.
 
 ## Building
 
 ```bash
-make              # Build document
-make watch        # Auto-rebuild on changes
-make clean        # Clean build artifacts
-make version      # Show version info
+make          # build
+make watch    # auto-rebuild when you save
+make clean    # remove build artifacts
+make sync     # re-sync .pxis/ after editing workspace.yml
 ```
 
-## Customization
+## Directory layout
 
-Override any component:
+```
+my-book/
+├── workspace/          ← submodule (this repo)
+├── workspace.yml       ← your configuration
+├── main.tex            ← document entry point
+├── Makefile
+├── parts/              ← book chapters (books only)
+├── frontmatter/        ← title, preface, copyright
+├── backmatter/
+├── sections/           ← article sections (articles only)
+├── figures/
+├── references/
+│   └── main.bib
+├── configs/            ← your component overrides
+└── .pxis/              ← auto-generated, don't edit
+```
 
-1. Create `configs/colors.tex` with your custom colors
-2. Add to workspace.yml:
+## Configuration
+
+Everything lives in `workspace.yml`. Key settings:
+
+```yaml
+project:
+  type: book            # book | article
+  title: "My Title"
+  author: "Your Name"
+  url: "https://github.com/you/repo"
+
+build:
+  source: main.tex      # which .tex file to compile
+  engine: pdflatex
+```
+
+Run `make sync` after any change to `workspace.yml`.
+
+See `examples/workspace.config.yml` for all options.
+
+## Overriding components
+
+Put your `.tex` files in `configs/`. Any file whose name matches a component
+replaces that component. `mode: extend` appends your file after the default instead.
+
 ```yaml
 overrides:
-  allow:
-    - colors.tex
+  dir: "configs"
+  mode: replace         # or: extend
 ```
-3. Run `make sync`
 
-Your custom colors are now used instead of defaults.
+Example: to customize colors, create `configs/colors.tex`. Done.
 
-## Generators
-
-Generate structure:
+## Adding structure (books)
 
 ```bash
-# New part
-bash workspace/src/generator/part.sh -n 2 -t "Advanced Topics"
-
-# New chapter
-bash workspace/src/generator/chapter.sh -p 1 -c 3 -t "Data Structures"
-
-# Cover page
-bash workspace/src/generator/cover.sh workspace.yml
+make part    ARGS='-n 1 -t "Part One"'
+make chapter ARGS='-p 1 -c 1 -t "Getting Started"'
 ```
 
-## Documentation
+## Bibliography
 
-- **[Getting Started](docs/getting-started.md)** - Complete setup guide
-- **[Configuration](docs/configuration.md)** - All configuration options
-- **[Customization](docs/customization.md)** - How to customize everything
-- **[Templates](docs/templates.md)** - Template documentation
-- **[Scripts](docs/scripts.md)** - Script reference
+Default style is `authoryear` with footnote citations.
+Use `\autocite{key}` for footnotes, `\textcite{key}` for "Author (year)" in text.
+`\printbibliography` goes at the end.
 
-## Requirements
+For numeric citations, override `bibliography.tex` in your `configs/`.
 
-Required:
-- TeX Live or MiKTeX (full installation)
-- Git
-- Bash 4.0+
-- Make
-- Python 3 with PyYAML
-- inotifywait or fswatch
+## Releasing
 
-## System Installation
-
-Install globally:
+After `make sync` (with `.pxis/` committed), tag and push:
 
 ```bash
-sudo make install
+git tag v1.0.0
+git push --tags
 ```
 
-Then use anywhere:
+The included workflow builds your PDF and publishes a GitHub Release automatically.
+A rolling pre-release draft is also built on every push to `main`.
 
-```bash
-papyrxis -t book --title "My Book"
-```
-
-## Contributing
-
-We welcome contributions!
-
-- Bug reports
-- Feature requests
-- Documentation improvements
-- New templates
-- Code contributions
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/papyrxis/workspace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/papyrxis/workspace/discussions)
-- **Email**: bitsgenix@gmail.com
+See `.github/workflows/` in your project after `init`.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE)
 
-## Credits
-
-Created and maintained by Mahdi (Genix).
-
-Built with:
-- LaTeX
-- TeX Live
-- Git
-- Bash
-- Love for typography
-
-## Star History
-
-If you find Papyrxis useful, please star the repository!
+Created by Mahdi ([@m-mdy-m](https://github.com/m-mdy-m))
