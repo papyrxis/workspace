@@ -9,26 +9,32 @@ readonly BLUE='\033[0;34m'
 readonly CYAN='\033[0;36m'
 readonly NC='\033[0m'
 
+# Same ANSI palette AND same glyphs as px/colors.py (the Python side of
+# this engine) — ▶ log, ✓ success, ⚠ warn, ℹ info, ✗ error/fail — so
+# `make sync`/`make build` and `python -m px ...` read as one tool
+# instead of two differently-styled ones. No per-line timestamp, matching
+# the Python side; pipe through `ts` yourself if you need timestamped logs.
+
 log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $*" >&2
+    echo -e "${BLUE}▶${NC} $*" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING:${NC} $*" >&2
+    echo -e "${YELLOW}⚠${NC} $*" >&2
 }
 
 error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR:${NC} $*" >&2
+    echo -e "${RED}✗${NC} $*" >&2
     exit 1
 }
 
 info() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] INFO:${NC} $*" >&2
+    echo -e "${CYAN}ℹ${NC} $*" >&2
 }
 
 debug() {
     if [[ "${DEBUG:-false}" == "true" ]]; then
-        echo -e "${CYAN}[$(date +'%Y-%m-%d %H:%M:%S')] DEBUG:${NC} $*" >&2
+        echo -e "${CYAN}·${NC} $*" >&2
     fi
 }
 

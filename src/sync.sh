@@ -205,9 +205,9 @@ gen_title() {
             local title="${CONFIG_project_title:-Untitled}"
             local author="${CONFIG_project_author:-Author}"
             local url="${CONFIG_project_url:-}"
-            sed -e "s|{{TITLE}}|$title|g" \
-                -e "s|{{AUTHOR}}|$author|g" \
-                -e "s|{{URL}}|$url|g" \
+            sed -e "s|@TITLE@|$title|g" \
+                -e "s|@AUTHOR@|$author|g" \
+                -e "s|@URL@|$url|g" \
                 "$WORKSPACE_ROOT/common/frontmatter/title.tex" > "frontmatter/title.tex"
         fi
     else
@@ -242,9 +242,9 @@ gen_frontmatter_item() {
         local title="${CONFIG_project_title:-Untitled}"
         local author="${CONFIG_project_author:-Author}"
         local url="${CONFIG_project_url:-}"
-        sed -e "s|{{TITLE}}|$title|g" \
-            -e "s|{{AUTHOR}}|$author|g" \
-            -e "s|{{URL}}|$url|g" \
+        sed -e "s|@TITLE@|$title|g" \
+            -e "s|@AUTHOR@|$author|g" \
+            -e "s|@URL@|$url|g" \
             "$tmpl" > "frontmatter/${item}.tex"
         return
     fi

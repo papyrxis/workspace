@@ -142,10 +142,10 @@ setup_main_tex() {
     if [[ "$TYPE" == "book" ]]; then
         local template="$WORKSPACE_ROOT/template/books/main.tex"
         if [[ -f "$template" ]]; then
-            sed -e "s|{{TITLE}}|$TITLE|g" \
-                -e "s|{{AUTHOR}}|$AUTHOR|g" \
-                -e "s|{{EMAIL}}|${EMAIL:-}|g" \
-                -e "s|{{URL}}|$URL|g" \
+            sed -e "s|@TITLE@|$TITLE|g" \
+                -e "s|@AUTHOR@|$AUTHOR|g" \
+                -e "s|@EMAIL@|${EMAIL:-}|g" \
+                -e "s|@URL@|$URL|g" \
                 "$template" > "$src_file"
         else
             create_book_tex "$src_file"
@@ -153,10 +153,10 @@ setup_main_tex() {
     else
         local template="$WORKSPACE_ROOT/template/article/main.tex"
         if [[ -f "$template" ]]; then
-            sed -e "s|{{TITLE}}|$TITLE|g" \
-                -e "s|{{AUTHOR}}|$AUTHOR|g" \
-                -e "s|{{EMAIL}}|${EMAIL:-}|g" \
-                -e "s|{{URL}}|$URL|g" \
+            sed -e "s|@TITLE@|$TITLE|g" \
+                -e "s|@AUTHOR@|$AUTHOR|g" \
+                -e "s|@EMAIL@|${EMAIL:-}|g" \
+                -e "s|@URL@|$URL|g" \
                 "$template" > "$src_file"
         else
             create_article_tex "$src_file"

@@ -10,6 +10,8 @@ else
     WORKSPACE_SRC := $(SRC_DIR)
 endif
 
+WORKSPACE_PY := $(dir $(WORKSPACE_SRC))
+
 .PHONY: all build sync clean watch version part chapter help
 
 all: build
@@ -26,7 +28,7 @@ watch:
 clean:
 	@echo "Cleaning..."
 	@rm -rf build/
-	@find . -type f \( \
+	@PYTHONPATH="$(WORKSPACE_PY)" python3 -m px clean . 2>/dev/null || find . -type f \( \
 		-name "*.aux" -o -name "*.log" -o -name "*.out" \
 		-o -name "*.toc" -o -name "*.bbl" -o -name "*.blg" \
 		-o -name "*.synctex.gz" -o -name "*.fdb_latexmk" \
