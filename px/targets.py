@@ -6,7 +6,7 @@ from typing import Any
 BUILTIN_TARGETS: dict[str, dict[str, Any]] = {
     "devto": {"label": "dev.to", "format": "gfm", "front_matter": True, "csl": None, "filters": [], "max_tags": 5},
     "medium": {"label": "Medium", "format": "gfm", "front_matter": False, "csl": None, "filters": []},
-    "ieee": {"label": "IEEE", "format": "markdown", "front_matter": False, "csl": "common/csl/ieee.csl", "filters": []},
+    "ieee": {"label": "IEEE", "format": "markdown", "front_matter": False, "csl": "ieee.csl", "filters": []},
     "journal": {"label": "Journal manuscript", "format": "markdown", "front_matter": False, "csl": None, "filters": []},
 }
 
