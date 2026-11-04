@@ -1,77 +1,87 @@
-# Getting Started
+# Getting started
 
-## Install
+## Requirements
 
-As a git submodule (recommended — keeps workspace separate from your content):
+- Python 3.10+ and PyYAML.
+- TeX Live or MiKTeX with latexmk and the engines selected by the project.
+- Pandoc only for Markdown export.
+- The m-mdy-m/log.c shared library for native structured logging.
+- gix and psx for repository flow and quality checks.
 
-```bash
-mkdir my-project && cd my-project
-git init
-git submodule add https://github.com/papyrxis/workspace.git
-bash workspace/src/init.sh
-```
+Install Workspace from a checkout:
 
-Direct clone (simpler if you have one project):
+~~~sh
+python -m pip install -e .
+~~~
 
-```bash
-git clone https://github.com/papyrxis/workspace.git my-project
-cd my-project
-bash src/init.sh
-```
+When using Workspace as a submodule, install the package from that folder or add it to PYTHONPATH:
 
-The init script asks a few questions and creates:
-- `workspace.yml` — your configuration
-- `main.tex` — document entry point
-- `Makefile` — build automation
-- Directory structure appropriate for your project type
+~~~sh
+git submodule add https://github.com/papyrxis/workspace.git workspace
+python -m pip install -e workspace
+~~~
 
-## First build
+## Install the shared logger
 
-```bash
-make sync   # generate .pxis/ from workspace.yml
-make        # compile the PDF
-```
+Workspace calls the stable C ABI from m-mdy-m/log.c. Build a pinned version:
 
-Output: `build/main.pdf` (or whatever `build.source` points to).
+~~~sh
+git clone --branch v0.1.0 --depth 1 https://github.com/m-mdy-m/log.c.git /tmp/mmlog
+cmake -S /tmp/mmlog -B /tmp/mmlog/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local" -DBUILD_SHARED_LIBS=ON
+cmake --build /tmp/mmlog/build
+cmake --install /tmp/mmlog/build
+~~~
 
-## Day to day
+If the dynamic loader cannot find the shared object, set M_MDY_M_LOG_LIBRARY to its full path. The initial CLI bootstrap still has a stderr fallback; px doctor tells you whether the native logger is active.
 
-```bash
-make watch  # auto-rebuild on save, Ctrl+C to stop
-```
+## Create a book
 
-When you edit `workspace.yml`:
+~~~sh
+mkdir my-book && cd my-book
+px init --type book --language en
+~~~
 
-```bash
-make sync   # re-generate .pxis/
-make        # rebuild
-```
+For an English and Persian book:
 
-When you update the workspace submodule:
+~~~sh
+px init --type book --language both
+~~~
 
-```bash
-cd workspace && git pull && cd ..
-make sync
-```
+The generator creates workspace.yml, a small Makefile, a main.tex for each language, and conventional chapters or sections, frontmatter, backmatter, figures and references directories. It does not overwrite existing source files unless --force is explicit.
 
-## Prerequisites
+## Build
 
-```bash
-pdflatex --version   # TeX Live or MiKTeX
-biber --version
-git --version
-make --version
-python3 -c "import yaml; print('ok')"   # PyYAML
-```
+~~~sh
+px build
+px build --language en
+px build --language fa
+make clean
+~~~
 
-Install TeX Live on Ubuntu/Debian:
+Each configured language is built with its own LaTeX engine. PDFs are written under build/<language>/ and validated before success is reported.
 
-```bash
-sudo apt-get install texlive-full
-```
+## Export an article
 
-On macOS:
+Install Pandoc with your operating system's package manager, then run:
 
-```bash
-brew install --cask mactex
-```
+~~~sh
+px export --target devto
+px export --target medium
+px tags
+~~~
+
+CSL is opt-in. Most publishing targets do not need an extra CSL file. The IEEE target uses the shared IEEE CSL profile.
+
+## Repository checks and releases
+
+~~~sh
+psx check --config psx.yml
+pipeline run check
+gix doctor
+gix feature start improve-template
+px changelog
+gix version bump patch
+px push --tags
+~~~
+
+Read Configuration, Architecture, Build and export, and Release workflow before customizing advanced behavior.
