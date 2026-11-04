@@ -1,114 +1,87 @@
-# Configuration Reference
+# Configuration
 
-All settings live in `workspace.yml`. Run `make sync` after any change.
+Every project has one workspace.yml. Workspace supplies small defaults; project YAML takes precedence. Explicit command-line options take precedence over both.
 
-## project
+## Example
 
-```yaml
+~~~yaml
+schema_version: 1
+
 project:
-  type: book          # book | article
-  title: "My Title"
+  name: nature-of-data
+  type: book
+  title: "The Nature of Data"
   author: "Your Name"
-  email: "you@example.com"
-  url: "https://github.com/you/repo"
-```
+  languages: [en, fa]
+  tags: [data, systems]
+  keywords: [information theory, representation]
 
-`type` affects which components are included by default and how frontmatter is generated.
-
-## build
-
-```yaml
 build:
-  source: main.tex    # which .tex file to compile (default: main.tex)
-  engine: pdflatex    # pdflatex | xelatex | lualatex
-  bibtex: biber       # biber | bibtex
   output_dir: build
-```
+  default_engine: xelatex
+  timeout_seconds: 1800
+  entries:
+    en:
+      source: en/main.tex
+      engine: pdflatex
+    fa:
+      source: fa/main.tex
+      engine: xelatex
 
-`source` is the key setting for multi-file projects. For a book with a specific
-naming scheme like `2026_MyBook_Volume_1.tex`, set it here and `make build`
-will pick it up automatically.
+export:
+  output_dir: build/export
+  targets: [devto, medium]
+  tag_limit: 5
 
-## components
+targets:
+  devto:
+    front_matter: true
+    format: gfm
+    csl: null
+    max_tags: 5
+~~~
 
-```yaml
-components:
-  - fonts
-  - math
-  - graphics
-  - tables
-  - hyperref
-  - colors
-  - layout
-  - titles
-  - pagestyles
-  - env
-  - index
-  - bibliography
-  - code
-  - boxes
-  - commands/base
-```
+## Project
 
-Default sets are applied when this section is absent:
-- **book**: full list above
-- **article**: `fonts math graphics tables hyperref colors layout bibliography code commands/base`
+- name is the stable project slug.
+- type is book, booklet, article or cv.
+- title and author are document metadata.
+- languages lists the editions to build.
+- tags and keywords supply platform tag generation.
 
-## overrides
+## Build
 
-```yaml
-overrides:
-  dir: "configs"      # directory containing your .tex overrides
-  mode: replace       # replace | extend
-```
+output_dir is the generated artifact directory and must stay inside the project. default_engine is one of pdflatex, xelatex or lualatex. Each entry maps one language to a source path and an optional engine.
 
-**replace** (default): your file in `configs/component.tex` replaces the default.
+Short form:
 
-**extend**: the default component loads first, then your file is appended.
-Useful for adding commands without duplicating the default setup.
+~~~yaml
+entries:
+  en: main.tex
+~~~
 
-Any `.tex` file in `configs/` whose name matches a component name is automatically
-picked up. No whitelist needed.
+Explicit form:
 
-## colors
+~~~yaml
+entries:
+  en:
+    source: en/main.tex
+    engine: pdflatex
+  fa:
+    source: fa/main.tex
+    engine: xelatex
+~~~
 
-```yaml
-colors:
-  scheme: technical   # technical | academic
-```
+Each edition is built independently under build/<language>/.
 
-Override completely by placing `configs/colors.tex` with your own definitions.
+## Export and targets
 
-## frontmatter (books)
+export.targets chooses the default target profiles. Built-ins include devto, medium, ieee and journal. Project values under targets.<name> override a profile.
 
-```yaml
-frontmatter:
-  - cover
-  - title
-  - copyright
-  - preface
-  - introduction
-```
+CSL is not global and is absent by default. Set it only when a target actually requires a citation style. dev.to adds front matter and tags; Medium does not. IEEE can use common/csl/ieee.csl. A profile can also list project-owned Pandoc Lua filters.
 
-Sync only generates these files if they don't already exist.
-Write your own `frontmatter/preface.tex` and sync won't touch it.
+## Validation
 
-## copyright
+YAML is loaded with yaml.safe_load; it is never evaluated as shell code. Project source and output paths must be relative and cannot escape the project directory. Unknown engines, malformed mappings and unsupported document types fail with a clear error.
 
-```yaml
-copyright:
-  type: cc-by-sa      # cc-by-sa | cc-by | cc-by-nc | mit | none
-  year: "auto"        # or a specific year: "2026"
-  holder: "Your Name"
-```
-
-## cover (books)
-
-```yaml
-cover:
-  type: generated     # generated | none
-  generated:
-    style: modern     # modern | classic | minimal
-```
-
-Or use your own: write `frontmatter/cover.tex` and set `type: none`.
+The canonical JSON Schema is schemas/workspace.schema.json.
