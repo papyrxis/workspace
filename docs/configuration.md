@@ -78,7 +78,7 @@ Each edition is built independently under build/<language>/.
 
 export.targets chooses the default target profiles. Built-ins include devto, medium, ieee and journal. Project values under targets.<name> override a profile.
 
-CSL is not global and is absent by default. Set it only when a target actually requires a citation style. dev.to adds front matter and tags; Medium does not. IEEE can use common/csl/ieee.csl. A profile can also list project-owned Pandoc Lua filters.
+CSL is not global and is absent by default. Set it only when a target actually requires a citation style. The built-in IEEE profile ships with the Workspace package, and a project can replace or disable it with a YAML override. dev.to adds front matter and tags; Medium does not. IEEE can use common/csl/ieee.csl. A profile can also list project-owned Pandoc Lua filters.
 
 ## Validation
 
