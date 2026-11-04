@@ -10,6 +10,7 @@ import yaml
 
 ENGINES = {"pdflatex", "xelatex", "lualatex"}
 PROJECT_TYPES = {"book", "booklet", "article", "cv"}
+_TARGET_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _LANGUAGE_CODE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 DEFAULTS: dict[str, Any] = {
@@ -95,13 +96,23 @@ def validate_config(config: Mapping[str, Any]) -> None:
             raise ConfigError(f"build.entries.{language}.engine must be one of: {', '.join(sorted(ENGINES))}")
     _safe_relative(export.get("output_dir", "build/export"), "export.output_dir")
     targets = export.get("targets", [])
-    if not isinstance(targets, list) or not all(isinstance(x, str) and x for x in targets):
-        raise ConfigError("export.targets must be a list of target names")
+    if not isinstance(targets, list) or not all(isinstance(x, str) and _TARGET_NAME.fullmatch(x) for x in targets):
+        raise ConfigError("export.targets must contain safe target identifiers (lowercase letters, numbers, _ and -)")
     tag_limit = export.get("tag_limit", 5)
     if type(tag_limit) is not int or not 1 <= tag_limit <= 20:
         raise ConfigError("export.tag_limit must be an integer between 1 and 20")
-    if not isinstance(config.get("targets", {}), Mapping):
+    target_overrides = config.get("targets", {})
+    if not isinstance(target_overrides, Mapping):
         raise ConfigError("targets must be a YAML mapping")
+    for name, override in target_overrides.items():
+        if not isinstance(name, str) or not _TARGET_NAME.fullmatch(name):
+            raise ConfigError(f"invalid target identifier: {name!r}")
+        if not isinstance(override, Mapping):
+            raise ConfigError(f"targets.{name} must be a YAML mapping")
+    for key in ("tags", "keywords"):
+        values = project.get(key, [])
+        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+            raise ConfigError(f"project.{key} must be a list of strings")
 
 
 def load_config(
