@@ -28,7 +28,7 @@ Actual books and articles stay in their own repositories. Personal CVs should be
 ## Start a project
 
 ~~~sh
-python -m pip install papyrxis-workspace
+python -m pip install -e /path/to/workspace
 mkdir my-book && cd my-book
 px init --type book --language en
 ~~~
@@ -37,7 +37,8 @@ Or use Workspace as a Git submodule:
 
 ~~~sh
 git submodule add https://github.com/papyrxis/workspace.git workspace
-PYTHONPATH="$PWD/workspace" python -m px init --type book --language en
+python -m pip install -e workspace
+px init --type book --language en
 ~~~
 
 Build with:
