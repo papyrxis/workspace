@@ -19,7 +19,7 @@ main() {
 
     check_workspace_file || error "No workspace.yml found. Run: bash workspace/src/init.sh"
 
-    load_config "$WORKSPACE_FILE"
+    load_from_config || error "Could not load workspace config: $WORKSPACE_FILE"
 
     bootstrap_version
     derive_context
