@@ -56,50 +56,93 @@ def _parser() -> argparse.ArgumentParser:
 def _init(root: Path, kind: str, language: str, force: bool) -> Path:
     import yaml
 
+    root = root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     config_path = root / "workspace.yml"
     if config_path.exists() and not force:
-        raise FileExistsError(f"{config_path} already exists; pass --force to replace it")
+        raise FileExistsError(f"{config_path} already exists; pass --force to replace the config")
     languages = ["en", "fa"] if language == "both" else [language]
-    entries = {}
+    if not languages or any(code not in {"en", "fa"} for code in languages):
+        raise ValueError("language must be en, fa or both")
+
+    generated: dict[Path, str] = {}
+    directories: set[Path] = {root / "references"}
+    entries: dict[str, dict[str, str]] = {}
+    title = root.name.replace("-", " ").replace("_", " ").title()
+
     for code in languages:
-        if code not in {"en", "fa"}:
-            raise ValueError("language must be en, fa or both")
         directory = root if len(languages) == 1 else root / code
-        directory.mkdir(parents=True, exist_ok=True)
-        source = directory / "main.tex"
-        if source.exists() and not force:
-            raise FileExistsError(f"refusing to overwrite {source}")
-        if code == "fa":
-            if kind in {"book", "booklet"}:
-                text = "\\documentclass[11pt,oneside]{book}\n\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n\\begin{document}\n\\frontmatter\n\\title{عنوان نمونه}\\author{نام نویسنده}\\maketitle\\tableofcontents\n\\mainmatter\n\\chapter{مقدمه}\nمتن نمونه برای شروع نگارش.\n\\end{document}\n"
-            else:
-                text = "\\documentclass{article}\n\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n\\begin{document}\n\\section{مقدمه}\nمتن نمونه برای شروع نگارش.\n\\end{document}\n"
+        directories.update({directory / "figures", directory / "frontmatter", directory / "backmatter"})
+        is_book = kind == "book"
+        is_booklet = kind == "booklet"
+        if is_book:
+            directories.add(directory / "chapters")
+            body_path = Path("chapters/chapter-01.tex")
+            body = "\\chapter{" + ("فصل اول" if code == "fa" else "Introduction") + "}\n" + ("متن نمونه برای شروع نگارش." if code == "fa" else "A clean starting point for your book.") + "\n"
+            structure = "\\frontmatter\n\\maketitle\n\\tableofcontents\n\\mainmatter\n\\include{chapters/chapter-01}\n\\backmatter\n"
+            document_class = "\\documentclass[11pt,oneside]{book}\n"
         else:
-            if kind in {"book", "booklet"}:
-                text = "\\documentclass[11pt,oneside]{book}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\begin{document}\n\\frontmatter\n\\title{A Sample Title}\\author{Your Name}\\maketitle\\tableofcontents\n\\mainmatter\n\\chapter{Introduction}\nA clean starting point for your book.\n\\end{document}\n"
+            directories.add(directory / "sections")
+            body_path = Path("sections/01-introduction.tex")
+            section_name = "معرفی" if code == "fa" and kind == "cv" else ("مقدمه" if code == "fa" else ("Profile" if kind == "cv" else "Introduction"))
+            sample = "اطلاعات خود را اینجا اضافه کنید." if code == "fa" else ("Add your profile details here." if kind == "cv" else "A clean starting point for your document.")
+            body = "\\section{" + section_name + "}\n" + sample + "\n"
+            if is_booklet:
+                structure = "\\maketitle\n\\tableofcontents\n\\input{sections/01-introduction}\n"
+            elif kind == "cv":
+                structure = "\\maketitle\n\\input{sections/01-introduction}\n"
             else:
-                text = "\\documentclass[11pt]{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\begin{document}\n\\section{Introduction}\nA clean starting point for your document.\n\\end{document}\n"
-        source.write_text(text, encoding="utf-8")
+                structure = "\\maketitle\n\\input{sections/01-introduction}\n"
+            document_class = "\\documentclass[11pt]{article}\n"
+
+        if code == "fa":
+            preamble = "\\usepackage{graphicx}\n\\usepackage{hyperref}\n\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n"
+            doc_title = "عنوان نمونه"
+            author = "نام نویسنده"
+        else:
+            preamble = "\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n"
+            doc_title = title
+            author = "Your Name"
+
+        main = (
+            document_class + preamble +
+            "\\title{" + doc_title + "}\n\\author{" + author + "}\n" +
+            "\\begin{document}\n" + structure + "\\end{document}\n"
+        )
+        main_path = directory / "main.tex"
+        body_file = directory / body_path
+        generated[main_path] = main
+        generated[body_file] = body
         entries[code] = {
-            "source": str(source.relative_to(root)).replace("\\", "/"),
+            "source": str(main_path.relative_to(root)).replace("\\", "/"),
             "engine": "xelatex" if code == "fa" else "pdflatex",
         }
-    for folder in ("figures", "references", "frontmatter", "backmatter"):
-        (root / folder).mkdir(exist_ok=True)
-    (root / "references" / "references.bib").touch(exist_ok=True)
+
+    generated[root / "references" / "references.bib"] = ""
+    for path in generated:
+        if path.exists() and not force and path.name != "references.bib":
+            raise FileExistsError(f"refusing to overwrite {path}")
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
+    for path, content in generated.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.name == "references.bib" and path.exists():
+            continue
+        path.write_text(content, encoding="utf-8")
+
     cfg = {
         "schema_version": 1,
         "project": {
             "name": root.name.lower().replace(" ", "-"),
             "type": kind,
-            "title": root.name,
+            "title": title,
             "author": "Your Name",
             "languages": languages,
         },
         "build": {
             "output_dir": "build",
             "default_engine": "xelatex",
+            "timeout_seconds": 1800,
             "entries": entries,
         },
         "export": {
@@ -112,16 +155,17 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
     makefile = root / "Makefile"
     if not makefile.exists():
         makefile.write_text(
-            "PYTHON ?= python3\n.PHONY: build clean export tags changelog\n"
-            "build:\n\t$(PYTHON) -m px build\n"
-            "clean:\n\t$(PYTHON) -m px clean\n"
-            "export:\n\t$(PYTHON) -m px export\n"
-            "tags:\n\t$(PYTHON) -m px tags\n"
-            "changelog:\n\t$(PYTHON) -m px changelog\n",
+            "PX ?= px\n.PHONY: build build-en build-fa clean export tags changelog\n"
+            "build:\n\t$(PX) build\n"
+            "build-en:\n\t$(PX) build --language en\n"
+            "build-fa:\n\t$(PX) build --language fa\n"
+            "clean:\n\t$(PX) clean\n"
+            "export:\n\t$(PX) export\n"
+            "tags:\n\t$(PX) tags\n"
+            "changelog:\n\t$(PX) changelog\n",
             encoding="utf-8",
         )
     return config_path
-
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
