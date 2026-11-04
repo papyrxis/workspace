@@ -1,0 +1,37 @@
+schema_version = 1
+
+[project]
+name = "papyrxis-workspace"
+description = "Reusable LaTeX publishing workspace"
+
+[defaults]
+timeout_seconds = 900
+fail_fast = true
+
+[tasks.compile]
+description = "Compile the shared Python workspace package"
+command = ["python", "-m", "compileall", "-q", "px"]
+
+[tasks.test]
+description = "Run configuration, scaffold and tooling tests"
+command = ["python", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]
+depends_on = ["compile"]
+
+[tasks.quality]
+description = "Run the repository quality policy"
+command = ["psx", "check", "--config", "psx.yml"]
+depends_on = ["test"]
+
+[tasks.check]
+description = "Run the complete workspace verification sequence"
+command = ["python", "-c", "print('Workspace checks passed')"]
+depends_on = ["quality"]
+
+[ci]
+language = "python"
+skip = ["install"]
+
+[ci.options]
+source = "px"
+tests = "tests"
+runner = "unittest"
