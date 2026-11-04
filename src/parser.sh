@@ -2,39 +2,28 @@
 
 set -euo pipefail
 
+# YAML is parsed by Python and emitted as base64 records. Shell values are never
+# evaluated as source code.
 parse_yaml() {
     local file="$1"
     local prefix="${2:-CONFIG_}"
-    
-    [[ ! -f "$file" ]] && return 1
-    
-    if command_exists python3 && python3 -c "import yaml" 2>/dev/null; then
-        python3 "$(dirname "$BASH_SOURCE")/parser.py" "$file" "$prefix"
-    else
-        parse_yaml_fallback "$file" "$prefix"
-    fi
+    local script_dir
+
+    [[ -f "$file" ]] || {
+        printf 'YAML file not found: %s\n' "$file" >&2
+        return 1
+    }
+    command -v python3 >/dev/null 2>&1 || {
+        printf 'python3 is required to parse workspace.yml safely\n' >&2
+        return 127
+    }
+    python3 -c 'import yaml' >/dev/null 2>&1 || {
+        printf 'PyYAML is required; install Workspace dependencies first\n' >&2
+        return 127
+    }
+
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+    python3 "$script_dir/parser.py" "$file" "$prefix"
 }
 
-parse_yaml_fallback() {
-    local file="$1"
-    local prefix="$2"
-    
-    local s='[[:space:]]*'
-    local w='[a-zA-Z0-9_]*'
-    local fs=$(echo @|tr @ '\034')
-    
-    sed -ne "s|^\($s\):|\1|" \
-         -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-         -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p" "$file" |
-    awk -F"$fs" '{
-        indent = length($1)/2;
-        vname[indent] = $2;
-        for (i in vname) {if (i > indent) {delete vname[i]}}
-        if (length($3) > 0) {
-            vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-            printf("%s%s%s=\"%s\"\n", "'"$prefix"'",vn, $2, $3);
-        }
-    }'
-}
-
-export -f parse_yaml parse_yaml_fallback
+export -f parse_yaml
