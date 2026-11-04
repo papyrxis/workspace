@@ -62,6 +62,10 @@ jobs:
           echo "M_MDY_M_LOG_LIBRARY=$library" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=$(dirname "$library"):\${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
+      - name: Smoke test the native m-mdy-m/log.c ABI
+        run: |
+          python -c "from px.logger import native_logger_available, log; assert native_logger_available(), 'native logger was not loaded'; log('info', 'native logger smoke test', component='ci', status='ok')"
+
       - name: Run the provider-neutral Pipeline task graph
         run: |
           mkdir -p .pipeline-artifacts
