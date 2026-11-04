@@ -53,8 +53,12 @@ def export_project(root: str | Path, config: dict[str, Any], target_names: list[
             if csl:
                 csl_path = Path(csl)
                 if not csl_path.is_absolute():
-                    project_path = (base / csl_path).resolve()
-                    csl_path = project_path if base in project_path.parents else Path(__file__).resolve().parents[1] / csl_path
+                    project_candidate = (base / csl_path).resolve()
+                    packaged_candidate = Path(__file__).resolve().parent / "data" / "csl" / csl_path.name
+                    if project_candidate.is_file():
+                        csl_path = project_candidate
+                    elif packaged_candidate.is_file():
+                        csl_path = packaged_candidate
                 if not csl_path.is_file():
                     raise ExportError(f"CSL file requested by {target_name!r} does not exist: {csl_path}")
                 command.extend(["--citeproc", f"--csl={csl_path}"])
