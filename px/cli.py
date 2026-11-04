@@ -49,6 +49,12 @@ def _parser() -> argparse.ArgumentParser:
     push = commands.add_parser("push", help="push current branch and optionally tags")
     push.add_argument("--tags", action="store_true")
 
+    log_cmd = commands.add_parser("log", help="write a structured log through m-mdy-m/log.c")
+    log_cmd.add_argument("--level", choices=("trace", "debug", "info", "warn", "error", "fatal"), default="info")
+    log_cmd.add_argument("--component", default="legacy-shell")
+    log_cmd.add_argument("message", nargs="+")
+    verify = commands.add_parser("verify-pdf", help="verify a generated PDF artifact")
+    verify.add_argument("path")
     commands.add_parser("doctor", help="check publishing tools and the native logger")
     return parser
 
@@ -174,6 +180,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             path = _init(root, args.type, args.language, args.force)
             log("info", f"Created {path}", component="init", status="ok")
+            return 0
+        if args.command == "log":
+            log(args.level, " ".join(args.message), component=args.component)
+            return 0
+        if args.command == "verify-pdf":
+            from .build import valid_pdf
+            path = Path(args.path).expanduser()
+            if not valid_pdf(path):
+                log("error", f"invalid or incomplete PDF: {path}", component="verify")
+                return 1
+            log("info", f"validated PDF: {path}", component="verify", status="ok")
             return 0
         if args.command == "doctor":
             checks = {
