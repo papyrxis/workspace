@@ -10,6 +10,13 @@ This directory contains modular LaTeX components that can be mixed and matched b
 
 ### Layout and Typography
 
+**paper-styles.tex**
+- Compatibility component for legacy publication projects.
+- Provides `\\applyPaperStyle{personal|single-column|two-column|academic|ieee|journal}`.
+- Defines `\\FooterAuthorName` with an overridable empty default and provides the academic theorem environments.
+- New projects should prefer the reusable presets under `common/presets/`.
+
+
 **colors.tex**
 - Color scheme system
 - Defines three schemes: default, technical, academic
