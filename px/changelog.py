@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .process import run
+from .process import run_checked
 
 _GROUPS = {
     "feat": "Added", "fix": "Fixed", "perf": "Performance", "docs": "Documentation",
@@ -15,7 +15,7 @@ _PATTERN = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?(?P<breaking>!)?:\s*(?P<s
 
 def generate_changelog(root: str | Path, output: str = "CHANGELOG.md", version: str = "Unreleased", dry_run: bool = False) -> str:
     base = Path(root).resolve()
-    result = run(["git", "log", "--no-merges", "--format=%s", "-100"], cwd=base, capture=True)
+    result = run_checked(["git", "log", "--no-merges", "--format=%s", "-100"], cwd=base)
     groups: dict[str, list[str]] = {}
     for subject in result.stdout.splitlines():
         match = _PATTERN.match(subject.strip())
@@ -42,8 +42,13 @@ def generate_changelog(root: str | Path, output: str = "CHANGELOG.md", version: 
     if path.is_absolute() or ".." in path.parts:
         raise ValueError("changelog output must stay inside the project")
     target = base / path
-    existing = target.read_text(encoding="utf-8") if target.is_file() else "# Changelog\n\n"
+    existing = target.read_text(encoding="utf-8") if target.is_file() else "# Changelog\n"
     if not dry_run:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(existing.rstrip() + "\n\n" + generated, encoding="utf-8")
+        if existing.startswith("# Changelog"):
+            heading, _, body = existing.partition("\n")
+            updated = heading + "\n\n" + generated + body.lstrip("\n")
+        else:
+            updated = generated + "\n" + existing
+        target.write_text(updated, encoding="utf-8")
     return generated
