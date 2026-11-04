@@ -69,7 +69,7 @@ chapter:
 	@bash src/generator/chapter.sh $(ARGS)
 
 version:
-	@gix version current
+	@gix version show
 
 help:
 	@echo "Papyrxis Workspace"
