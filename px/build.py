@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
+import re
 from typing import Any, Iterable
 
 from .logger import log
@@ -42,12 +44,16 @@ def build_project(root: str | Path, config: dict[str, Any], languages: Iterable[
     base = Path(root).expanduser().resolve()
     build_cfg = config["build"]
     output_base = _inside(base, build_cfg["output_dir"], "build.output_dir")
+    if output_base == base:
+        raise BuildError("build.output_dir cannot be the project root")
     selected = set(languages or [])
     unknown = selected - set(build_cfg["entries"])
     if unknown:
         raise BuildError(f"language(s) not configured: {', '.join(sorted(unknown))}")
     results: list[Path] = []
     for language, raw in build_cfg["entries"].items():
+        if not isinstance(language, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", language):
+            raise BuildError(f"invalid language identifier: {language!r}")
         if selected and language not in selected:
             continue
         entry = {"source": raw, "engine": build_cfg.get("default_engine", "xelatex")} if isinstance(raw, str) else dict(raw)
@@ -65,7 +71,8 @@ def build_project(root: str | Path, config: dict[str, Any], languages: Iterable[
             print(" ".join(command))
             continue
         output.mkdir(parents=True, exist_ok=True)
-        env = {"TEXINPUTS": f".:{base / 'tex'}//:{base / 'configs'}//:"}
+        tex_paths = [f"{source.parent}{os.path.sep}{os.path.sep}", f"{base / 'tex'}{os.path.sep}{os.path.sep}", f"{base / 'configs'}{os.path.sep}{os.path.sep}"]
+        env = {"TEXINPUTS": os.pathsep.join(tex_paths) + os.pathsep}
         run_checked(command, cwd=base, env=env, timeout=int(build_cfg.get("timeout_seconds", 1800)))
         if not valid_pdf(expected):
             raise BuildError(f"{language}: LaTeX command completed but PDF is missing or incomplete: {expected}")
