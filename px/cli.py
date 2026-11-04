@@ -10,7 +10,7 @@ from .build import BuildError, build_project, clean_project
 from .changelog import generate_changelog
 from .config import ConfigError, load_config
 from .export import ExportError, export_project
-from .logger import get_logger, log, native_logger_available
+from .logger import close_all, get_logger, log, native_logger_available
 from .process import CommandError, run_checked
 from .tags import generate_tags
 
@@ -242,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         log("error", str(exc), component="cli", status="failed")
         return getattr(exc, "code", 1) or 1
     finally:
-        get_logger().close()
+        close_all()
 
 
 if __name__ == "__main__":
