@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .logger import log
-from .process import run
+from .process import run_checked
 
 _ENGINE_FLAGS = {"pdflatex": "-pdf", "xelatex": "-xelatex", "lualatex": "-lualatex"}
 
@@ -66,7 +66,7 @@ def build_project(root: str | Path, config: dict[str, Any], languages: Iterable[
             continue
         output.mkdir(parents=True, exist_ok=True)
         env = {"TEXINPUTS": f".:{base / 'tex'}//:{base / 'configs'}//:"}
-        run(command, cwd=base, env=env, timeout=int(build_cfg.get("timeout_seconds", 1800)))
+        run_checked(command, cwd=base, env=env, timeout=int(build_cfg.get("timeout_seconds", 1800)))
         if not valid_pdf(expected):
             raise BuildError(f"{language}: LaTeX command completed but PDF is missing or incomplete: {expected}")
         log("info", f"Built {expected.relative_to(base)}", component="build", status="ok")
