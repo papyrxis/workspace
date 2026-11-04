@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "papyrxis-workspace"
+version = "0.2.0"
+description = "A reusable, YAML-configured LaTeX publishing workspace"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+px = "px.cli:main"
+
+[tool.setuptools]
+packages = ["px"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
