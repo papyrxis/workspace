@@ -41,7 +41,11 @@ def generate_changelog(root: str | Path, output: str = "CHANGELOG.md", version: 
     path = Path(output)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError("changelog output must stay inside the project")
-    target = base / path
+    target = (base / path).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError as exc:
+        raise ValueError("changelog output escapes the project directory") from exc
     existing = target.read_text(encoding="utf-8") if target.is_file() else "# Changelog\n"
     if not dry_run:
         target.parent.mkdir(parents=True, exist_ok=True)
