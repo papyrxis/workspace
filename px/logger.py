@@ -131,3 +131,10 @@ def log(level: str, message: str, *, component: str = "workspace", status: str =
 
 def native_logger_available() -> bool:
     return get_logger().native
+
+
+def close_all() -> None:
+    """Flush and destroy every logger instance created by this process."""
+    for instance in _loggers.values():
+        instance.close()
+    _loggers.clear()
