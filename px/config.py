@@ -3,12 +3,14 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 import yaml
 
 ENGINES = {"pdflatex", "xelatex", "lualatex"}
 PROJECT_TYPES = {"book", "booklet", "article", "cv"}
+_LANGUAGE_CODE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 DEFAULTS: dict[str, Any] = {
     "schema_version": 1,
@@ -65,16 +67,21 @@ def validate_config(config: Mapping[str, Any]) -> None:
     if project.get("type") not in PROJECT_TYPES:
         raise ConfigError(f"project.type must be one of: {', '.join(sorted(PROJECT_TYPES))}")
     languages = project.get("languages")
-    if not isinstance(languages, list) or not languages or not all(isinstance(x, str) and x for x in languages):
-        raise ConfigError("project.languages must be a non-empty list of language codes")
+    if not isinstance(languages, list) or not languages or not all(isinstance(x, str) and _LANGUAGE_CODE.fullmatch(x) for x in languages):
+        raise ConfigError("project.languages must be a non-empty list of safe language identifiers (letters, numbers, _ and -)")
     _safe_relative(build.get("output_dir", "build"), "build.output_dir")
     engine = build.get("default_engine", "xelatex")
     if engine not in ENGINES:
         raise ConfigError(f"build.default_engine must be one of: {', '.join(sorted(ENGINES))}")
+    timeout = build.get("timeout_seconds", 1800)
+    if type(timeout) is not int or timeout < 1:
+        raise ConfigError("build.timeout_seconds must be a positive integer")
     entries = build.get("entries")
     if not isinstance(entries, Mapping) or not entries:
         raise ConfigError("build.entries must map language codes to source definitions")
     for language, entry in entries.items():
+        if not isinstance(language, str) or not _LANGUAGE_CODE.fullmatch(language):
+            raise ConfigError(f"invalid language identifier: {language!r}")
         if language not in languages:
             raise ConfigError(f"build.entries contains {language!r}, which is not listed in project.languages")
         if isinstance(entry, str):
