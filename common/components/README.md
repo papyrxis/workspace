@@ -22,6 +22,7 @@ This directory contains modular LaTeX components that can be mixed and matched b
 - Float positioning rules
 - List formatting (itemize, enumerate, description)
 - Widow and orphan control
+- Article-safe table-of-contents styling: chapter-level entries are applied only when the document class defines them
 
 **titles.tex**
 - Section title formatting
