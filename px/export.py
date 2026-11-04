@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .logger import log
-from .process import run
+from .process import run_checked
 from .tags import generate_tags
 from .targets import resolve_target
 
@@ -64,7 +64,7 @@ def export_project(root: str | Path, config: dict[str, Any], target_names: list[
                 command.append(f"--lua-filter={path}")
             command.extend(["--output", str(destination)])
             log("info", f"Exporting {language} for {target_name}", component="export")
-            run(command, cwd=base, timeout=900)
+            run_checked(command, cwd=base, timeout=900)
             if target.get("front_matter"):
                 project = config["project"]
                 values = list(project.get("tags", [])) + list(project.get("keywords", []))
