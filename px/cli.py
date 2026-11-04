@@ -11,7 +11,7 @@ from .changelog import generate_changelog
 from .config import ConfigError, load_config
 from .export import ExportError, export_project
 from .logger import get_logger, log, native_logger_available
-from .process import CommandError, run
+from .process import CommandError, run_checked
 from .tags import generate_tags
 
 
@@ -165,16 +165,16 @@ def main(argv: list[str] | None = None) -> int:
             print(generate_changelog(root, args.output, args.version, args.dry_run), end="")
             return 0
         if args.command == "tag":
-            if run(["git", "status", "--porcelain"], cwd=root, capture=True).stdout.strip():
+            if run_checked(["git", "status", "--porcelain"], cwd=root).stdout.strip():
                 raise ValueError("refusing to tag a dirty working tree; commit or stash changes first")
             flag = "-s" if args.sign else "-a"
-            run(["git", "tag", flag, args.name, "-m", f"Release {args.name}"], cwd=root)
+            run_checked(["git", "tag", flag, args.name, "-m", f"Release {args.name}"], cwd=root)
             log("info", f"Created tag {args.name}", component="release", status="ok")
             return 0
         if args.command == "push":
-            run(["git", "push", "origin", "HEAD"], cwd=root)
+            run_checked(["git", "push", "origin", "HEAD"], cwd=root)
             if args.tags:
-                run(["git", "push", "origin", "--tags"], cwd=root)
+                run_checked(["git", "push", "origin", "--tags"], cwd=root)
             return 0
         if args.command == "watch":
             def snapshot() -> dict[Path, int]:
