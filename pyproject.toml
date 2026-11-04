@@ -17,7 +17,10 @@ test = ["pytest>=8"]
 px = "px.cli:main"
 
 [tool.setuptools]
-packages = ["px"]
+packages = ["px", "px.data", "px.data.csl"]
+
+[tool.setuptools.package-data]
+"px.data.csl" = ["*.csl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
