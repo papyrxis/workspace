@@ -2,26 +2,43 @@
 
 set -euo pipefail
 
+_PX_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$_PX_LOADER_DIR/parser.sh"
+
 load_config() {
     local config_file="${1:-workspace.yml}"
+    local records key encoded value
 
-    [[ ! -f "$config_file" ]] && return 1
+    [[ -f "$config_file" ]] || {
+        printf 'Workspace config not found: %s\n' "$config_file" >&2
+        return 1
+    }
 
-    while IFS= read -r line; do
-        [[ "$line" =~ ^#.*$ ]] && continue
-        [[ -z "$line" ]] && continue
+    records="$(parse_yaml "$config_file")" || return 1
 
-        if [[ "$line" == *"="* ]]; then
-            local key="${line%%=*}"
-            local value="${line#*=}"
+    while IFS=$'\t' read -r key encoded; do
+        [[ -n "$key" ]] || continue
+        [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || {
+            printf 'Rejected invalid config variable: %s\n' "$key" >&2
+            return 1
+        }
+        [[ "$encoded" =~ ^[A-Za-z0-9+/]*={0,2}$ ]] || {
+            printf 'Rejected malformed base64 value for %s\n' "$key" >&2
+            return 1
+        }
 
-            if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-                eval "export ${key}=${value}"
-            fi
+        if value="$(printf '%s' "$encoded" | base64 --decode 2>/dev/null)"; then
+            :
+        elif value="$(printf '%s' "$encoded" | base64 -D 2>/dev/null)"; then
+            :
+        else
+            printf 'Could not decode YAML value for %s\n' "$key" >&2
+            return 1
         fi
-    done < <(parse_yaml "$config_file" 2>/dev/null)
 
-    return 0
+        printf -v "$key" '%s' "$value"
+        export "$key"
+    done <<< "$records"
 }
 
 get_config() {
@@ -31,33 +48,23 @@ get_config() {
     var_name="${var_name//-/_}"
 
     if [[ -v "$var_name" ]]; then
-        echo "${!var_name}"
+        printf '%s\n' "${!var_name}"
     else
-        echo "$default"
+        printf '%s\n' "$default"
     fi
 }
 
 load_from_config() {
-    [[ ! -f "$WORKSPACE_FILE" ]] && return 1
-
+    [[ -f "$WORKSPACE_FILE" ]] || return 1
     load_config "$WORKSPACE_FILE" || return 1
 
-    OUTPUT_DIR=$(get_config "build_output_dir" "build")
-    ENGINE=$(get_config "build_engine" "pdflatex")
-    BIBTEX=$(get_config "build_bibtex" "biber")
-
-    [[ -z "$TYPE" ]] && TYPE=$(get_config "project_type" "book")
-
+    OUTPUT_DIR="$(get_config "build_output_dir" "build")"
+    ENGINE="$(get_config "build_engine" "xelatex")"
+    BIBTEX="$(get_config "build_bibtex" "biber")"
+    TYPE="${TYPE:-$(get_config "project_type" "book")}"
     PROJECT_TYPE="$TYPE"
-    OVERRIDE_DIR=$(get_config "overrides_dir" "configs")
-
-    # SOURCE: from config if not set already
-    if [[ -z "$SOURCE" ]]; then
-        local cfg_source
-        cfg_source=$(get_config "build_source" "main.tex")
-        SOURCE="$cfg_source"
-    fi
-
+    OVERRIDE_DIR="$(get_config "overrides_dir" "configs")"
+    SOURCE="${SOURCE:-$(get_config "build_source" "main.tex")}"
     return 0
 }
 
