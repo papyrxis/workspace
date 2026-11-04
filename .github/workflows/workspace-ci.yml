@@ -1,0 +1,76 @@
+name: Workspace CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+
+      - name: Install native build tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends cmake build-essential
+
+      - name: Install Workspace and shared CI engine
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install "git+https://github.com/m-mdy-m/pipeline.git@main"
+
+      - name: Install gix and psx
+        run: |
+          go install github.com/m-mdy-m/gix/cmd/gix@v1.2.0
+          go install github.com/m-mdy-m/psx/cmd/psx@v0.3.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Build m-mdy-m/log.c shared library
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch v0.1.0 https://github.com/m-mdy-m/log.c.git "$RUNNER_TEMP/mmlog"
+          cmake -S "$RUNNER_TEMP/mmlog" -B "$RUNNER_TEMP/mmlog/build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/mmlog/install" \
+            -DBUILD_SHARED_LIBS=ON \
+            -DM_MDY_M_LOG_BUILD_TESTS=OFF \
+            -DM_MDY_M_LOG_BUILD_EXAMPLES=OFF
+          cmake --build "$RUNNER_TEMP/mmlog/build" --parallel
+          cmake --install "$RUNNER_TEMP/mmlog/build"
+          library="$(find "$RUNNER_TEMP/mmlog/install" -type f -name 'libm-mdy-m-log.so*' -print -quit)"
+          test -n "$library"
+          echo "M_MDY_M_LOG_LIBRARY=$library" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$library"):\${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+
+      - name: Run the provider-neutral Pipeline task graph
+        run: |
+          mkdir -p .pipeline-artifacts
+          pipeline run check --json --result .pipeline-artifacts/workspace-report.json
+
+      - name: Upload Pipeline report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-pipeline-report
+          path: .pipeline-artifacts/
+          if-no-files-found: ignore
