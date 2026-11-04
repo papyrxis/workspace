@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 from typing import Any
 
 from .logger import log
@@ -69,8 +70,11 @@ def export_project(root: str | Path, config: dict[str, Any], target_names: list[
                 project = config["project"]
                 values = list(project.get("tags", [])) + list(project.get("keywords", []))
                 tags = generate_tags(values, min(int(target.get("max_tags", 5)), int(export_cfg.get("tag_limit", 5))))
-                title = str(project.get("title", "")).replace('"', "'")
-                front = ["---", f'title: "{title}"', "published: false", "tags: [" + ", ".join(tags) + "]", "---", ""]
+                title = json.dumps(str(project.get("title", "")), ensure_ascii=False)
+                front = ["---", f"title: {title}", "published: false"]
+                if tags:
+                    front.append("tags: [" + ", ".join(tags) + "]")
+                front.extend(["---", ""])
                 body = destination.read_text(encoding="utf-8")
                 destination.write_text("\n".join(front) + body, encoding="utf-8")
             outputs.append(destination)
