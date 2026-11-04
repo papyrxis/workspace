@@ -1,67 +1,84 @@
-VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-BUILD_DATE ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+PYTHON ?= python3
+PX ?= $(PYTHON) -m px
+TYPE ?= book
+LANGUAGE ?=
+TARGET ?= devto
+LEVEL ?= patch
+VERSION ?=
+TAGS ?= 0
 
-WORKSPACE_ROOT := $(shell pwd)
-SRC_DIR        := $(WORKSPACE_ROOT)/src
+.PHONY: all help init build build-en build-fa build-all watch clean export tags changelog bump tag push doctor test sync part chapter
 
-ifeq ($(shell [ -d "workspace" ] && echo 1 || echo 0), 1)
-    WORKSPACE_SRC := workspace/src
-else
-    WORKSPACE_SRC := $(SRC_DIR)
-endif
+all: help
 
-WORKSPACE_PY := $(dir $(WORKSPACE_SRC))
-
-.PHONY: all build sync clean watch version part chapter help
-
-all: build
-
-sync:
-	@bash $(WORKSPACE_SRC)/sync.sh
+init:
+	@$(PX) init --type "$(TYPE)"
 
 build:
-	@bash $(WORKSPACE_SRC)/build.sh
+	@$(PX) build $(if $(LANGUAGE),--language "$(LANGUAGE)",)
+
+build-en:
+	@$(PX) build --language en
+
+build-fa:
+	@$(PX) build --language fa
+
+build-all:
+	@$(PX) build
 
 watch:
-	@bash $(WORKSPACE_SRC)/build.sh -w
+	@$(PX) watch
 
 clean:
-	@echo "Cleaning..."
-	@rm -rf build/
-	@PYTHONPATH="$(WORKSPACE_PY)" python3 -m px clean . 2>/dev/null || find . -type f \( \
-		-name "*.aux" -o -name "*.log" -o -name "*.out" \
-		-o -name "*.toc" -o -name "*.bbl" -o -name "*.blg" \
-		-o -name "*.synctex.gz" -o -name "*.fdb_latexmk" \
-		-o -name "*.fls" -o -name "*.idx" -o -name "*.ilg" \
-		-o -name "*.ind" -o -name "*.run.xml" -o -name "*.bcf" \
-		\) -delete 2>/dev/null || true
-	@echo "✓ Clean"
+	@$(PX) clean
+
+export:
+	@$(PX) export --target "$(TARGET)"
+
+tags:
+	@$(PX) tags
+
+changelog:
+	@$(PX) changelog
+
+bump:
+	@gix version bump "$(LEVEL)"
+
+tag:
+ifndef VERSION
+	$(error VERSION is required. Usage: make tag VERSION=v1.2.0)
+endif
+	@$(PX) tag "$(VERSION)" --sign
+
+push:
+	@$(PX) push $(if $(filter 1,$(TAGS)),--tags,)
+
+doctor:
+	@$(PX) doctor
+
+test:
+	@$(PYTHON) -m unittest discover -s tests -p "test_*.py" -v
+
+sync:
+	@bash src/sync.sh
 
 part:
-	@bash $(WORKSPACE_SRC)/generator/part.sh $(ARGS)
+	@bash src/generator/part.sh $(ARGS)
 
 chapter:
-	@bash $(WORKSPACE_SRC)/generator/chapter.sh $(ARGS)
+	@bash src/generator/chapter.sh $(ARGS)
 
 version:
-	@echo "Version:    $(VERSION)"
-	@echo "Build date: $(BUILD_DATE)"
+	@gix version current
 
 help:
-	@echo ""
-	@echo "  Papyrxis Workspace"
-	@echo "  ──────────────────────────────────────"
-	@echo ""
-	@echo "  make              Build document"
-	@echo "  make sync         Sync .pxis/ from workspace.yml"
-	@echo "  make watch        Auto-rebuild on save"
-	@echo "  make clean        Remove build artifacts"
-	@echo ""
-	@echo "  make part    ARGS='-n 2 -t \"Part Title\"'"
-	@echo "  make chapter ARGS='-p 1 -c 2 -t \"Chapter Title\"'"
-	@echo ""
-	@echo "  make version      Show version info"
-	@echo "  make help         This message"
-	@echo ""
+	@echo "Papyrxis Workspace"
+	@echo "  make init TYPE=book"
+	@echo "  make build | build-en | build-fa | build-all"
+	@echo "  make export TARGET=devto"
+	@echo "  make tags | changelog | bump LEVEL=minor"
+	@echo "  make tag VERSION=v1.2.0 | push TAGS=1"
+	@echo "  make clean | doctor | test"
+	@echo "  make sync | part ARGS='...' | chapter ARGS='...' (legacy generators)"
 
 .DEFAULT_GOAL := all
