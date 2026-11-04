@@ -57,3 +57,14 @@ make test
 The build command never commits, tags or pushes. Release actions are explicit so an ordinary document build cannot publish an unfinished document by accident.
 
 Legacy sync, part and chapter helpers are retained temporarily for old projects. New behavior must be implemented in px modules and the old shell entry points should not gain duplicated features.
+
+
+## Diagnostics and shell integration
+
+~~~sh
+px doctor
+px log --level info --component build "PDF generation started"
+px verify-pdf build/en/main.pdf
+~~~
+
+`px log` is the structured logging entry point used by legacy Bash scripts; records are routed through `m-mdy-m/log.c`. `px verify-pdf` validates both the PDF signature and its end marker, so a stale or truncated file is not accepted as a successful build.
