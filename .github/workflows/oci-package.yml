@@ -29,5 +29,6 @@ jobs:
         python -m twine check dist/*.whl dist/*.tar.gz &&
         python scripts/package_release.py --input dist --output dist/papyrxis-workspace-release.zip
       artifact-path: dist/papyrxis-workspace-release.zip
+      artifact-media-type: application/zip
       artifact-test-command: >-
-        python scripts/package_release.py --verify dist/papyrxis-workspace-release.zip
+        python scripts/test_release_install.py --bundle "$PIPELINE_ARTIFACT_PATH"
