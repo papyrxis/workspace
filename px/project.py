@@ -37,7 +37,7 @@ def _documents(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | None = None,
-                   edition: str | None = None) -> list[dict[str, Any]]:
+                   edition: str | list[str] | None = None) -> list[dict[str, Any]]:
     """Validate the complete selected build plan before any compiler is started."""
     base = Path(root).expanduser().resolve()
     output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
@@ -46,6 +46,8 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
     documents = _documents(config)
     if document_id and document_id not in documents:
         raise BuildError(f"unknown document {document_id!r}; run px list")
+    requested_editions = {edition} if isinstance(edition, str) else set(edition or [])
+    seen_editions: set[str] = set()
     plan: list[dict[str, Any]] = []
     destinations: set[Path] = set()
     for doc_id, document in documents.items():
@@ -57,8 +59,9 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
         if not isinstance(editions, dict) or not editions:
             raise BuildError(f"documents.{doc_id}.editions must be a non-empty mapping")
         for edition_id, raw in editions.items():
-            if edition and edition_id != edition:
+            if requested_editions and edition_id not in requested_editions:
                 continue
+            seen_editions.add(edition_id)
             if not _ID.fullmatch(edition_id):
                 raise BuildError(f"invalid edition id: {doc_id}/{edition_id}")
             if not isinstance(raw, dict) or not isinstance(raw.get("source"), str):
@@ -88,8 +91,9 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
                 "source": source, "engine": engine, "output_dir": output_dir,
                 "output": destination,
             })
-    if edition and not plan:
-        raise BuildError(f"edition {edition!r} is not configured for the selected document")
+    missing_editions = requested_editions - seen_editions
+    if missing_editions:
+        raise BuildError(f"edition(s) not configured for the selected document: {', '.join(sorted(missing_editions))}")
     if not plan:
         raise BuildError("no documents or editions selected")
     return plan
@@ -121,7 +125,7 @@ def _write_manifest(path: Path, manifest: dict[str, Any]) -> None:
 
 
 def build_documents(root: str | Path, config: dict[str, Any], document_id: str | None = None,
-                    edition: str | None = None, *, dry_run: bool = False,
+                    edition: str | list[str] | None = None, *, dry_run: bool = False,
                     keep_going: bool = False) -> dict[str, Any]:
     base = Path(root).expanduser().resolve()
     plan = plan_documents(base, config, document_id, edition)
