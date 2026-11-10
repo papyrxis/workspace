@@ -12,7 +12,7 @@ from .config import ConfigError, load_config
 from .export import ExportError, export_project
 from .logger import close_all, get_logger, log, native_logger_available
 from .process import CommandError, run_checked
-from .project import build_documents, list_documents, verify_manifest
+from .project import build_documents, clean_document, list_documents, verify_manifest
 from .tags import generate_tags
 
 
@@ -237,17 +237,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "clean":
             if args.document_id:
-                from .project import _documents
-                from .build import _inside
-                import shutil
-                if config["schema_version"] != 2:
-                    raise ValueError("selective clean requires schema_version 2")
-                if args.document_id not in _documents(config):
-                    raise ValueError(f"unknown document {args.document_id!r}; run px list")
-                target = _inside(root, str(Path(config["build"]["output_dir"]) / args.document_id), "clean target")
-                if target == root:
-                    raise ValueError("refusing to clean project root")
-                shutil.rmtree(target, ignore_errors=True)
+                clean_document(root, config, args.document_id)
             else:
                 clean_project(root, config)
             return 0
@@ -280,19 +270,26 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "watch":
             def snapshot() -> dict[Path, int]:
                 result = {}
-                for raw in config["build"]["entries"].values():
-                    source = root / (raw if isinstance(raw, str) else raw["source"])
+                if config["schema_version"] == 2:
+                    from .project import _documents
+                    entries = (edition for doc in _documents(config).values()
+                               for edition in doc["editions"].values())
+                    sources = (root / entry["source"] for entry in entries)
+                else:
+                    sources = (root / (raw if isinstance(raw, str) else raw["source"])
+                               for raw in config["build"]["entries"].values())
+                for source in sources:
                     if source.exists():
                         result[source] = source.stat().st_mtime_ns
                 return result
-            build_project(root, config)
+            build_documents(root, config, keep_going=True)
             previous = snapshot()
             log("info", "Watching configured LaTeX sources; press Ctrl+C to stop", component="watch")
             while True:
                 time.sleep(max(0.2, args.interval))
                 current = snapshot()
                 if current != previous:
-                    build_project(root, config)
+                    build_documents(root, config, keep_going=True)
                     previous = snapshot()
         return 0
     except (ConfigError, BuildError, ExportError, CommandError, OSError, ValueError) as exc:
