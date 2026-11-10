@@ -11,6 +11,17 @@ docker run --rm --entrypoint python "$image" -c "from px.logger import native_lo
 project="$(mktemp -d)"
 trap 'rm -rf "$project"' EXIT
 docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" init --type article --language en
+cat > "$project/main.tex" <<'EOF'
+\\documentclass[11pt]{article}
+\\input{article/ieee.tex}
+\\title{Workspace Container E2E}
+\\author{Papyrxis}
+\\begin{document}
+\\maketitle
+\\section{Preset test}
+This document is built using the shared Workspace IEEE article preset.
+\\end{document}
+EOF
 docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" build
 docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" verify
 
