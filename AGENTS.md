@@ -41,7 +41,7 @@ Workspace is the shared, project-neutral publishing platform for Papyrxis reposi
 - Run `pipeline validate`, `pipeline list`, and `pipeline run check` locally/CI.
 - Build and inspect wheel/sdist; install the wheel in a clean environment and run `px --help` and a smoke project.
 - Build Docker image, run container smoke tests, and verify OCI labels. Registry pushes only run on trusted release events with configured secrets.
-- Release assets include checksums and a machine-readable package manifest; verify every asset before publishing.
+- Release assets include checksums and a machine-readable package manifest; sign assets and attach GitHub provenance attestations, then verify every asset before publishing.
 
 ## Change discipline
 
