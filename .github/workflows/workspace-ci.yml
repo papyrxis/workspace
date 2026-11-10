@@ -66,6 +66,10 @@ jobs:
         run: |
           python -c "from px.logger import native_logger_available, log; assert native_logger_available(), 'native logger was not loaded'; log('info', 'native logger smoke test', component='ci', status='ok')"
 
+      - name: Validate and inspect the provider-neutral Pipeline graph
+        run: |
+          pipeline validate
+          pipeline list
       - name: Run the provider-neutral Pipeline task graph
         run: |
           mkdir -p .pipeline-artifacts
