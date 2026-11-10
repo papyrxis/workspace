@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 from typing import Any, Mapping
 
@@ -42,7 +42,8 @@ def _safe_relative(value: Any, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"{label} must be a non-empty relative path")
     path = Path(value)
-    if path.is_absolute() or ".." in path.parts:
+    windows_path = PureWindowsPath(value)
+    if path.is_absolute() or windows_path.is_absolute() or windows_path.drive or ".." in path.parts or ".." in windows_path.parts:
         raise ConfigError(f"{label} must stay inside the project directory")
     return value
 
