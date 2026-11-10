@@ -69,7 +69,7 @@ Install from a downloaded wheel with `python -m pip install ./papyrxis_workspace
 
 ## Docker distribution
 
-The release-published workflow builds and smoke-tests a multi-platform image for `linux/amd64` and `linux/arm64`, then publishes to GHCR. It additionally publishes to Docker Hub when the repository has `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` Actions secrets configured. Docker Hub credentials are never committed or passed to PR workflows.
+The version-tag workflow builds and smoke-tests a multi-platform image for `linux/amd64` and `linux/arm64`, then publishes to GHCR. It additionally publishes to Docker Hub when the repository has `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` Actions secrets configured. Docker Hub credentials are never committed or passed to PR workflows.
 
 ~~~sh
 docker pull ghcr.io/papyrxis/workspace:<version>
