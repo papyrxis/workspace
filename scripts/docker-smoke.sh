@@ -12,7 +12,7 @@ project="$(mktemp -d)"
 trap 'rm -rf "$project"' EXIT
 docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" init --type article --language en
 cat > "$project/main.tex" <<'EOF'
-\\documentclass[11pt]{article}
+\documentclass[11pt]{article}
 \\input{article/ieee.tex}
 \\title{Workspace Container E2E}
 \\author{Papyrxis}
