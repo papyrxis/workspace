@@ -17,10 +17,11 @@ test = ["pytest>=8"]
 px = "px.cli:main"
 
 [tool.setuptools]
-packages = ["px", "px.data", "px.data.csl"]
+packages = ["px", "px.data", "px.data.csl", "common"]
 
 [tool.setuptools.package-data]
 "px.data.csl" = ["*.csl"]
+"common" = ["**/*.tex", "**/*.sty", "**/*.cls", "**/*.bib", "**/*.bst", "**/*.md", "**/*.csl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
