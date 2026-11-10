@@ -4,16 +4,16 @@
   "type": "object",
   "required": ["schema_version", "project", "build"],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"enum": [1, 2]},
     "project": {
       "type": "object",
       "required": ["type", "languages"],
       "properties": {
         "name": {"type": "string", "minLength": 1},
-        "type": {"enum": ["book", "booklet", "article", "cv"]},
+        "type": {"enum": ["book", "booklet", "article", "cv", "collection"]},
         "title": {"type": "string"},
         "author": {"type": "string"},
-        "languages": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "languages": {"type": "array", "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"}, "minItems": 1},
         "tags": {"type": "array", "items": {"type": "string"}},
         "keywords": {"type": "array", "items": {"type": "string"}}
       },
@@ -21,31 +21,46 @@
     },
     "build": {
       "type": "object",
-      "required": ["entries"],
       "properties": {
         "output_dir": {"type": "string", "default": "build"},
         "default_engine": {"enum": ["pdflatex", "xelatex", "lualatex"]},
         "timeout_seconds": {"type": "integer", "minimum": 1},
-        "entries": {
-          "type": "object",
-          "minProperties": 1,
-          "additionalProperties": {
-            "oneOf": [
-              {"type": "string"},
-              {
-                "type": "object",
-                "required": ["source"],
-                "properties": {
-                  "source": {"type": "string"},
-                  "engine": {"enum": ["pdflatex", "xelatex", "lualatex"]}
-                },
-                "additionalProperties": true
-              }
-            ]
-          }
-        }
+        "entries": {"type": "object", "minProperties": 1, "additionalProperties": {"oneOf": [
+          {"type": "string"},
+          {"type": "object", "required": ["source"], "properties": {
+            "source": {"type": "string"},
+            "engine": {"enum": ["pdflatex", "xelatex", "lualatex"]}
+          }, "additionalProperties": true}
+        ]}}
       },
       "additionalProperties": true
+    },
+    "documents": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {"enum": ["book", "booklet", "article", "cv"]},
+          "title": {"type": "string"},
+          "editions": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "required": ["source"],
+              "properties": {
+                "source": {"type": "string"},
+                "engine": {"enum": ["pdflatex", "xelatex", "lualatex"]},
+                "output_name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"}
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": ["editions"],
+        "additionalProperties": true
+      }
     },
     "export": {
       "type": "object",
@@ -58,5 +73,15 @@
     },
     "targets": {"type": "object", "additionalProperties": {"type": "object"}}
   },
+  "allOf": [
+    {
+      "if": {"properties": {"schema_version": {"const": 1}}},
+      "then": {"properties": {"project": {"properties": {"type": {"enum": ["book", "booklet", "article", "cv"]}}}, "build": {"required": ["entries"]}}}
+    },
+    {
+      "if": {"properties": {"schema_version": {"const": 2}}},
+      "then": {"required": ["documents"], "properties": {"project": {"properties": {"type": {"enum": ["book", "booklet", "article", "cv", "collection"]}}}}}
+    }
+  ],
   "additionalProperties": true
 }
