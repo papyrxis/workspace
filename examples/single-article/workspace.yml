@@ -1,0 +1,22 @@
+schema_version: 1
+
+project:
+  name: sample-article
+  type: article
+  title: A Single Article
+  author: Papyrxis
+  languages: [en]
+
+build:
+  output_dir: build
+  default_engine: pdflatex
+  timeout_seconds: 900
+  entries:
+    en:
+      source: main.tex
+      engine: pdflatex
+
+export:
+  output_dir: build/export
+  targets: [devto]
+  tag_limit: 5
