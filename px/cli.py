@@ -12,6 +12,7 @@ from .config import ConfigError, load_config
 from .export import ExportError, export_project
 from .logger import close_all, get_logger, log, native_logger_available
 from .process import CommandError, run_checked
+from .project import build_documents, list_documents, verify_manifest
 from .tags import generate_tags
 
 
@@ -26,11 +27,17 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--language", default="en", choices=("en", "fa", "both"))
     init.add_argument("--force", action="store_true")
 
-    build = commands.add_parser("build", help="build configured language editions")
-    build.add_argument("--language", action="append", default=[])
+    build = commands.add_parser("build", help="build all documents or a selected document")
+    build.add_argument("document_id", nargs="?", help="optional document id")
+    build.add_argument("--edition", help="optional edition id")
+    build.add_argument("--language", action="append", default=[], help="v1-compatible edition selector")
     build.add_argument("--dry-run", action="store_true")
-
-    commands.add_parser("clean", help="remove only the configured generated output")
+    build.add_argument("--keep-going", action="store_true")
+    list_cmd = commands.add_parser("list", help="list documents, editions and build status")
+    list_cmd.add_argument("--json", action="store_true")
+    clean = commands.add_parser("clean", help="remove generated output")
+    clean.add_argument("document_id", nargs="?")
+    commands.add_parser("verify", help="verify build manifest and generated PDFs")
     watch = commands.add_parser("watch", help="rebuild when source files change")
     watch.add_argument("--interval", type=float, default=1.5)
 
@@ -206,10 +213,43 @@ def main(argv: list[str] | None = None) -> int:
 
         config = load_config(root, args.config)
         if args.command == "build":
-            build_project(root, config, args.language, dry_run=args.dry_run)
+            selected_edition = args.edition
+            if args.language:
+                if selected_edition or len(args.language) != 1:
+                    raise ValueError("select exactly one edition using --edition or --language")
+                selected_edition = args.language[0]
+            build_documents(root, config, args.document_id, selected_edition,
+                            dry_run=args.dry_run, keep_going=args.keep_going)
+            return 0
+        if args.command == "list":
+            import json
+            rows = list_documents(root, config)
+            if args.json:
+                print(json.dumps(rows, ensure_ascii=False, sort_keys=True, indent=2))
+            else:
+                for row in rows:
+                    print(f"{row['document_id']:<18} {row['edition']:<10} {row['status']:<12} {row['source']}")
+            return 0
+        if args.command == "verify":
+            result = verify_manifest(root, config)
+            log("info", f"Verified {result['checked']} PDF artifact(s) from {result['manifest']}",
+                component="verify", status="ok")
             return 0
         if args.command == "clean":
-            clean_project(root, config)
+            if args.document_id:
+                from .project import _documents
+                from .build import _inside
+                import shutil
+                if config["schema_version"] != 2:
+                    raise ValueError("selective clean requires schema_version 2")
+                if args.document_id not in _documents(config):
+                    raise ValueError(f"unknown document {args.document_id!r}; run px list")
+                target = _inside(root, str(Path(config["build"]["output_dir"]) / args.document_id), "clean target")
+                if target == root:
+                    raise ValueError("refusing to clean project root")
+                shutil.rmtree(target, ignore_errors=True)
+            else:
+                clean_project(root, config)
             return 0
         if args.command == "export":
             outputs = export_project(root, config, args.target)
