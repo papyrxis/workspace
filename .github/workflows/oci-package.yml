@@ -1,0 +1,33 @@
+name: Publish installable Workspace package to GHCR
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  package:
+    uses: m-mdy-m/pipeline/.github/workflows/oci-publish.yml@main
+    permissions:
+      contents: read
+      packages: write
+    with:
+      pipeline-ref: main
+      package-name: papyrxis-workspace
+      component-id: papyrxis-workspace
+      variant: python-distributions
+      test-command: >-
+        python -m pip install -e ".[test]" &&
+        python -m unittest discover -s tests -p "test_*.py" -v
+      build-command: >-
+        PIPELINE_RELEASE_TAG="$GITHUB_REF_NAME" python scripts/set_release_version.py &&
+        python -m pip install --upgrade build twine &&
+        python -m build --sdist --wheel --outdir dist &&
+        python -m twine check dist/*.whl dist/*.tar.gz &&
+        python scripts/package_release.py --input dist --output dist/papyrxis-workspace-release.zip
+      artifact-path: dist/papyrxis-workspace-release.zip
+      artifact-test-command: >-
+        python scripts/package_release.py --verify dist/papyrxis-workspace-release.zip
