@@ -96,7 +96,7 @@ build:
             plan = plan_documents(root, config)
             self.assertEqual(plan[0]["output"].relative_to(root).as_posix(), "build/en/main.pdf")
 
-    def test_rejects_traversal_and_bad_engine(self):
+    def test_rejects_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self._project(root)
@@ -105,6 +105,32 @@ build:
             path.write_text(text, encoding="utf-8")
             with self.assertRaises(ConfigError):
                 load_config(root)
+
+    def test_rejects_unsupported_engine(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._project(root)
+            path = root / "workspace.yml"
+            text = path.read_text(encoding="utf-8").replace("engine: pdflatex", "engine: tectonic")
+            path.write_text(text, encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                load_config(root)
+
+    def test_rejects_symlink_source_escape(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            root = Path(tmp)
+            self._project(root)
+            outside_source = Path(outside) / "outside.tex"
+            outside_source.write_text("fixture", encoding="utf-8")
+            link = root / "papers" / "escape.tex"
+            try:
+                link.symlink_to(outside_source)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation is unavailable on this runner")
+            config = load_config(root)
+            config["documents"]["paper-a"]["editions"]["en"]["source"] = "papers/escape.tex"
+            with self.assertRaises(BuildError):
+                plan_documents(root, config)
 
     def test_partial_failures_are_recorded_and_return_nonzero(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +153,24 @@ build:
             manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["summary"]["failed"], 1)
             self.assertEqual(manifest["summary"]["completed"], 3)
+
+    def test_partial_build_preserves_other_manifest_entries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\\nfixture\\n%%EOF\\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, keep_going=True)
+                build_documents(root, config, "paper-a", keep_going=True)
+            self.assertEqual(verify_manifest(root, config)["checked"], 4)
+            manifest = __import__("json").loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(manifest["results"]), 4)
 
     def test_build_manifest_and_sha_verification(self):
         with tempfile.TemporaryDirectory() as tmp:
