@@ -35,6 +35,8 @@ jobs:
         python -m twine check dist/*.whl dist/*.tar.gz &&
         python scripts/package_release.py --input dist --output dist/papyrxis-workspace-release.zip
       artifact-path: dist/*
+      artifact-test-command: >-
+        python scripts/test_release_install.py --bundle "$PIPELINE_ARTIFACT_TEST_DIR/papyrxis-workspace-release.zip"
       changelog-path: CHANGELOG.md
       asset-profile: gitea
       dry-run: ${{ inputs.dry-run || false }}
