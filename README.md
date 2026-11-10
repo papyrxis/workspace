@@ -123,7 +123,7 @@ Equivalent Make targets are documented in docs/scripts.md.
 - .gix/config defines branch flow. Use gix feature start and gix feature finish.
 - The shared logger is m-mdy-m/log.c; Workspace calls its stable C ABI through ctypes. A simple stderr fallback is used during bootstrap if the shared library is not installed.
 
-Read docs/architecture.md, docs/getting-started.md, docs/configuration.md, docs/build-and-export.md and docs/releasing.md.
+Read docs/architecture.md, docs/getting-started.md, docs/configuration.md, docs/build-and-export.md, docs/multi-document.md, docs/logging.md and docs/releasing.md.
 
 ## License
 
