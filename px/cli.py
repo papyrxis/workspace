@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import time
 from pathlib import Path
 
-from .build import BuildError, build_project, clean_project
+from .build import BuildError, clean_project
 from .changelog import generate_changelog
 from .config import ConfigError, load_config
 from .export import ExportError, export_project
