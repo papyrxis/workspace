@@ -111,6 +111,8 @@ def validate_config(config: Mapping[str, Any]) -> None:
             for edition_id, edition in editions.items():
                 if not isinstance(edition_id, str) or not _LANGUAGE_CODE.fullmatch(edition_id):
                     raise ConfigError(f"invalid edition id: {document_id}/{edition_id}")
+                if edition_id not in languages:
+                    raise ConfigError(f"documents.{document_id}.editions contains {edition_id!r}, which is not listed in project.languages")
                 _validate_edition(edition, f"documents.{document_id}.editions.{edition_id}", engine)
 
     _safe_relative(export.get("output_dir", "build/export"), "export.output_dir")
