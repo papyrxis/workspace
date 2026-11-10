@@ -39,4 +39,6 @@ jobs:
         python scripts/test_release_install.py --bundle "$PIPELINE_ARTIFACT_TEST_DIR/papyrxis-workspace-release.zip"
       changelog-path: CHANGELOG.md
       asset-profile: gitea
+      sign-assets: true
+      attest-release: true
       dry-run: ${{ inputs.dry-run || false }}
