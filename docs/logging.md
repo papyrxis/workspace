@@ -35,6 +35,7 @@ The public C API is intentionally small:
 
 ~~~c
 #include <m-mdy-m/log.h>
+#include <string.h>
 
 mmlog_logger_t *logger = NULL;
 mmlog_event_t event;
