@@ -37,18 +37,21 @@ The public C API is intentionally small:
 #include <m-mdy-m/log.h>
 #include <string.h>
 
-mmlog_logger_t *logger = NULL;
-mmlog_event_t event;
-if (mmlog_logger_create(NULL, &logger) == MMLLOG_OK) {
-    mmlog_event_init(&event);
-    event.level = MMLLOG_LEVEL_INFO;
-    event.layer = "publishing";
-    event.component = "papers";
-    event.status = "built";
-    event.message = "PDF build completed";
-    event.message_length = strlen(event.message);
-    mmlog_logger_write(logger, &event);
+int main(void) {
+    mmlog_logger_t *logger = NULL;
+    mmlog_event_t event;
+    if (mmlog_logger_create(NULL, &logger) != MMLLOG_OK) return 1;
+    if (mmlog_event_init(&event) == MMLLOG_OK) {
+        event.level = MMLLOG_LEVEL_INFO;
+        event.layer = "publishing";
+        event.component = "papers";
+        event.status = "built";
+        event.message = "PDF build completed";
+        event.message_length = strlen(event.message);
+        mmlog_logger_write(logger, &event);
+    }
     mmlog_logger_destroy(logger);
+    return 0;
 }
 ~~~
 
