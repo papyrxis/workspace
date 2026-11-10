@@ -45,6 +45,7 @@ def main() -> int:
         python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         px = environment / ("Scripts/px.exe" if os.name == "nt" else "bin/px")
         subprocess.run([str(python), "-m", "pip", "install", str(wheels[0])], check=True)
+        subprocess.run([str(python), "-c", "from px.resources import common_root; p=common_root(); assert (p / 'components' / 'paper-styles.tex').is_file(); assert (p / 'presets' / 'book' / 'technical.tex').is_file()"], check=True)
         subprocess.run([str(px), "--help"], check=True, stdout=subprocess.DEVNULL)
         example = args.project_example.resolve()
         subprocess.run([str(px), "--root", str(example), "list", "--json"], check=True,
