@@ -31,6 +31,8 @@ Actual books and articles stay in their own repositories. Personal CVs should be
 python -m pip install -e /path/to/workspace
 mkdir my-book && cd my-book
 px init --type book --language en
+# or create a multi-document collection:
+px init --type collection --language both
 ~~~
 
 Or use Workspace as a Git submodule:
