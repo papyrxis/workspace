@@ -11,7 +11,7 @@ class ReleaseVersionTests(unittest.TestCase):
         self.assertEqual(pep440_version("v1.2.3-alpha.1"), "1.2.3a1")
         self.assertEqual(pep440_version("v1.2.3-beta.4"), "1.2.3b4")
         self.assertEqual(pep440_version("v1.2.3-rc.2"), "1.2.3rc2")
-        self.assertEqual(pep440_version("v0.0.0-dev.abcdef0"), "0.0.0.dev11259360")
+        self.assertEqual(pep440_version("v0.0.0-dev.abcdef0"), "0.0.0.dev180150000")
 
     def test_rejects_non_semver_tag(self):
         with self.assertRaises(ValueError):
