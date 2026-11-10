@@ -17,11 +17,17 @@ test = ["pytest>=8"]
 px = "px.cli:main"
 
 [tool.setuptools]
-packages = ["px", "px.data", "px.data.csl", "common"]
+packages = ["px", "px.data", "px.data.csl"]
 
 [tool.setuptools.package-data]
 "px.data.csl" = ["*.csl"]
-"common" = ["**/*.tex", "**/*.sty", "**/*.cls", "**/*.bib", "**/*.bst", "**/*.md", "**/*.csl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.data-files]
+"share/papyrxis-workspace/common/components" = ["common/components/*.tex"]
+"share/papyrxis-workspace/common/components/commands" = ["common/components/commands/*.tex"]
+"share/papyrxis-workspace/common/packages" = ["common/packages/*.tex"]
+"share/papyrxis-workspace/common/presets/book" = ["common/presets/book/*.tex"]
+"share/papyrxis-workspace/common/presets/article" = ["common/presets/article/*.tex"]
