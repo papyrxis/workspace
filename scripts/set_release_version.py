@@ -21,7 +21,7 @@ def pep440_version(tag: str) -> str:
         dev_number = int(dev_id) if dev_id.isdigit() else int(dev_id, 16)
         return f"{base}.dev{dev_number}"
     suffix = {"alpha": "a", "beta": "b", "rc": "rc"}[stage]
-    return f"{base}{suffix}{number}
+    return f"{base}{suffix}{number}"
 
 
 def main() -> int:
