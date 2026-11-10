@@ -9,10 +9,10 @@ from pathlib import Path
 def common_root() -> Path:
     """Return the shared common/ tree from a source checkout or installed wheel."""
     source_tree = Path(__file__).resolve().parents[1] / "common"
-    if source_tree.is_dir():
+    if (source_tree / "components" / "paper-styles.tex").is_file():
         return source_tree.resolve()
     installed_tree = Path(sysconfig.get_path("data")) / "share" / "papyrxis-workspace" / "common"
-    if installed_tree.is_dir():
+    if (installed_tree / "components" / "paper-styles.tex").is_file():
         return installed_tree.resolve()
     raise FileNotFoundError(
         "Workspace common LaTeX resources are missing; reinstall the full papyrxis-workspace wheel"
