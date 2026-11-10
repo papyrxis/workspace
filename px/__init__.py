@@ -1,6 +1,6 @@
 """Public compatibility API for the Papyrxis Workspace package."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from .base_module import BaseModule
 from .colors import BLUE, BOLD, CYAN, DIM, GREEN, GREY, MAGENTA, RED, RESET, YELLOW, b, c, dim, error, info, log, success, warn
