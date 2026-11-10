@@ -29,7 +29,31 @@ Then expose the installed library through the platform loader or set `M_MDY_M_LO
 
 ## Reuse from another Papyrxis repository
 
-Do not copy Workspace's logger or embed repository-specific logger logic. Link/build `m-mdy-m/log.c` as a shared dependency, use its documented stable C ABI, and give every subsystem a component prefix. For Python repositories, the `px.logger` adapter is specific to Workspace; other projects should use their own small adapter around the same public ABI rather than depending on the Workspace package.
+Do not copy Workspace's logger or embed repository-specific logger logic. Link/build `m-mdy-m/log.c` as a shared dependency, use its documented stable C ABI, and give every subsystem a component prefix.
+
+The public C API is intentionally small:
+
+~~~c
+#include <m-mdy-m/log.h>
+
+mmlog_logger_t *logger = NULL;
+mmlog_event_t event;
+if (mmlog_logger_create(NULL, &logger) == MMLLOG_OK) {
+    mmlog_event_init(&event);
+    event.level = MMLLOG_LEVEL_INFO;
+    event.layer = "publishing";
+    event.component = "papers";
+    event.status = "built";
+    event.message = "PDF build completed";
+    event.message_length = strlen(event.message);
+    mmlog_logger_write(logger, &event);
+    mmlog_logger_destroy(logger);
+}
+~~~
+
+For Python, Rust, Go, C#, Lua and other foreign runtimes, call the non-variadic `mmlog_logger_write()` record API; never call the C variadic `mmlog_logf()` through FFI. Query `mmlog_abi_version()`, use the public struct initializers, check status codes, and keep strings alive until the synchronous write returns. The current ABI is 1.0.
+
+For Python repositories, `px.logger` is a Workspace-specific adapter; other projects should use a small adapter around the same public ABI rather than depending on the Workspace package. The upstream [C ABI reference](https://github.com/m-mdy-m/log.c/blob/v0.1.0/docs/abi.md) and [language binding guide](https://github.com/m-mdy-m/log.c/blob/v0.1.0/docs/language-bindings.md) define the exact layouts and FFI rules.
 
 For shell compatibility, call `px log --level info --component <component> <message>` when Workspace is installed. Do not use shell `eval` or parse structured YAML to construct logging commands.
 
