@@ -85,7 +85,7 @@ A second Pipeline reusable workflow publishes the verified Python distribution b
 Download the package by its immutable digest using ORAS (replace the tag with the release version or use the digest recorded by the publishing workflow):
 
 ~~~sh
-oras pull ghcr.io/papyrxis/papyrxis-workspace:<version>
+oras pull ghcr.io/papyrxis/papyrxis-workspace:<version>-linux-amd64
 python scripts/package_release.py --verify papyrxis-workspace-release.zip
 ~~~
 
