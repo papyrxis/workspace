@@ -11,7 +11,7 @@ def common_root() -> Path:
     source_tree = Path(__file__).resolve().parents[1] / "common"
     if source_tree.is_dir():
         return source_tree.resolve()
-    installed_tree = Path(sysconfig.get_path("purelib")) / "common"
+    installed_tree = Path(sysconfig.get_path("data")) / "share" / "papyrxis-workspace" / "common"
     if installed_tree.is_dir():
         return installed_tree.resolve()
     raise FileNotFoundError(
