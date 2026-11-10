@@ -13,6 +13,7 @@ from typing import Any
 from .build import BuildError, _inside, valid_pdf
 from .logger import log
 from .process import run_checked
+from .resources import tex_inputs
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 _ENGINES = {"pdflatex": "-pdf", "xelatex": "-xelatex", "lualatex": "-lualatex"}
@@ -179,9 +180,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
             continue
         try:
             item["output_dir"].mkdir(parents=True, exist_ok=True)
-            source_parent = str(item["source"].parent) + os.path.sep + os.path.sep
-            env = {"TEXINPUTS": os.pathsep.join([source_parent, str(base / "tex") + os.path.sep + os.path.sep,
-                                                   str(base / "configs") + os.path.sep + os.path.sep]) + os.pathsep}
+            env = {"TEXINPUTS": tex_inputs(base, item["source"])}
             run_checked(command, cwd=base, env=env,
                         timeout=int(config["build"].get("timeout_seconds", 1800)))
             if not valid_pdf(item["output"]):
