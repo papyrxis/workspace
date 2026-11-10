@@ -9,7 +9,7 @@ from typing import Any, Mapping
 import yaml
 
 ENGINES = {"pdflatex", "xelatex", "lualatex"}
-PROJECT_TYPES = {"book", "booklet", "article", "cv"}
+PROJECT_TYPES = {"book", "booklet", "article", "cv", "collection"}
 _TARGET_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _LANGUAGE_CODE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
@@ -66,7 +66,7 @@ def validate_config(config: Mapping[str, Any]) -> None:
     project, build, export = config.get("project"), config.get("build"), config.get("export")
     if not all(isinstance(value, Mapping) for value in (project, build, export)):
         raise ConfigError("project, build and export must be YAML mappings")
-    if project.get("type") not in PROJECT_TYPES:
+    if project.get("type") not in (PROJECT_TYPES if version == 2 else PROJECT_TYPES - {"collection"}):
         raise ConfigError(f"project.type must be one of: {', '.join(sorted(PROJECT_TYPES))}")
     languages = project.get("languages")
     if not isinstance(languages, list) or not languages or not all(
@@ -103,7 +103,7 @@ def validate_config(config: Mapping[str, Any]) -> None:
                 raise ConfigError(f"invalid document id: {document_id!r}")
             if not isinstance(document, Mapping):
                 raise ConfigError(f"documents.{document_id} must be a mapping")
-            if document.get("type", project["type"]) not in PROJECT_TYPES:
+            if document.get("type", project["type"]) not in (PROJECT_TYPES - {"collection"}):
                 raise ConfigError(f"documents.{document_id}.type is invalid")
             editions = document.get("editions")
             if not isinstance(editions, Mapping) or not editions:
