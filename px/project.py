@@ -137,6 +137,8 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
     if not dry_run and manifest_path.is_file():
         try:
             previous_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(previous_data, dict):
+                raise ValueError("manifest root must be an object")
             previous_records = previous_data.get("results", [])
             if not isinstance(previous_records, list) or not all(isinstance(row, dict) for row in previous_records):
                 raise ValueError("results must be a list of objects")
@@ -220,6 +222,8 @@ def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, A
     if manifest_path.is_file():
         try:
             data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict) or not isinstance(data.get("results", []), list):
+                raise ValueError("invalid manifest structure")
             statuses = {(r["document_id"], r["edition"]): r for r in data.get("results", [])}
         except (OSError, ValueError, KeyError, TypeError):
             log("warn", "Ignoring unreadable or invalid build manifest", component="list")
@@ -299,6 +303,10 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
     if manifest_path.is_file():
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(manifest, dict) or not isinstance(manifest.get("results", []), list):
+                raise ValueError("invalid manifest structure")
+            if not all(isinstance(row, dict) for row in manifest.get("results", [])):
+                raise ValueError("manifest results must be objects")
         except (OSError, ValueError) as exc:
             raise BuildError(f"cannot reconcile build manifest before clean: {exc}") from exc
     shutil.rmtree(target, ignore_errors=True)
