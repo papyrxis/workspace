@@ -6,19 +6,22 @@ import os
 import re
 from pathlib import Path
 
-TAG = re.compile(r"^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-(alpha|beta|rc)\.([1-9][0-9]*))?$")
+TAG = re.compile(r"^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-(alpha|beta|rc)\.([1-9][0-9]*)|-dev\.([A-Za-z0-9]+))?$")
 
 
 def pep440_version(tag: str) -> str:
     match = TAG.fullmatch(tag)
     if not match:
         raise ValueError(f"unsupported SemVer release tag: {tag!r}")
-    major, minor, patch, stage, number = match.groups()
+    major, minor, patch, stage, number, dev_id = match.groups()
     base = f"{major}.{minor}.{patch}"
-    if stage is None:
+    if stage is None and dev_id is None:
         return base
+    if dev_id is not None:
+        dev_number = int(dev_id) if dev_id.isdigit() else int(dev_id, 16)
+        return f"{base}.dev{dev_number}"
     suffix = {"alpha": "a", "beta": "b", "rc": "rc"}[stage]
-    return f"{base}{suffix}{number}"
+    return f"{base}{suffix}{number}
 
 
 def main() -> int:
