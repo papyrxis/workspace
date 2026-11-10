@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       texlive-xetex \
       texlive-lang-arabic \
       fonts-lmodern \
+      lmodern \
       fonts-dejavu-core \
       fonts-hosny-amiri \
       pandoc \
