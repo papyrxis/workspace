@@ -16,3 +16,5 @@
 
 - [Command reference](scripts.md) — px, Make, gix and release commands.
 - [Release workflow](releasing.md) — branch flow, changelog, tags and push.
+
+- [Multi-document projects (schema v2)](multi-document.md)
