@@ -85,3 +85,7 @@ CSL is not global and is absent by default. Set it only when a target actually r
 YAML is loaded with yaml.safe_load; it is never evaluated as shell code. Project source and output paths must be relative and cannot escape the project directory. Unknown engines, malformed mappings and unsupported document types fail with a clear error.
 
 The canonical JSON Schema is schemas/workspace.schema.json.
+
+## Schema versions
+
+Workspace accepts schema v1 and v2. Keep v1 for a single document with language editions. Use v2 when a repository contains multiple independent publications. The v2 top-level `documents` mapping is required, and each document owns one or more `editions`; see [Multi-document projects](multi-document.md) for the full schema and migration path. The machine-readable schema is `schemas/workspace.schema.json`.
