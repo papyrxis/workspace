@@ -21,7 +21,8 @@ class SharedTeXResourceTests(unittest.TestCase):
         self.assertTrue(paths[0].startswith(str(source.parent)))
         self.assertTrue(paths[1].startswith(str(root / "tex")))
         self.assertTrue(paths[2].startswith(str(root / "configs")))
-        self.assertTrue(paths[3].startswith(str(common_root() / "components")))
+        self.assertTrue(paths[3].startswith(str(common_root())))
+        self.assertTrue(paths[4].startswith(str(common_root() / "components")))
 
 
 if __name__ == "__main__":
