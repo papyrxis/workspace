@@ -142,27 +142,57 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
             continue
         path.write_text(content, encoding="utf-8")
 
-    cfg = {
-        "schema_version": 1,
-        "project": {
-            "name": root.name.lower().replace(" ", "-"),
-            "type": kind,
-            "title": title,
-            "author": "Your Name",
-            "languages": languages,
-        },
-        "build": {
-            "output_dir": "build",
-            "default_engine": "xelatex",
-            "timeout_seconds": 1800,
-            "entries": entries,
-        },
-        "export": {
-            "output_dir": "build/export",
-            "targets": ["devto"],
-            "tag_limit": 5,
-        },
-    }
+    project_name = root.name.lower().replace(" ", "-")
+    if kind == "collection":
+        cfg = {
+            "schema_version": 2,
+            "project": {
+                "name": project_name,
+                "type": "collection",
+                "title": title,
+                "author": "Your Name",
+                "languages": languages,
+            },
+            "build": {
+                "output_dir": "build",
+                "default_engine": "xelatex",
+                "timeout_seconds": 1800,
+            },
+            "documents": {
+                "first-article": {
+                    "type": "article",
+                    "title": title,
+                    "editions": entries,
+                }
+            },
+            "export": {
+                "output_dir": "build/export",
+                "targets": ["devto"],
+                "tag_limit": 5,
+            },
+        }
+    else:
+        cfg = {
+            "schema_version": 1,
+            "project": {
+                "name": project_name,
+                "type": kind,
+                "title": title,
+                "author": "Your Name",
+                "languages": languages,
+            },
+            "build": {
+                "output_dir": "build",
+                "default_engine": "xelatex",
+                "timeout_seconds": 1800,
+                "entries": entries,
+            },
+            "export": {
+                "output_dir": "build/export",
+                "targets": ["devto"],
+                "tag_limit": 5,
+            },
+        }
     config_path.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False), encoding="utf-8")
     makefile = root / "Makefile"
     if not makefile.exists():
