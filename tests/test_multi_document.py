@@ -84,7 +84,8 @@ documents:
                 outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
                 source = Path(command[-1])
                 outdir.mkdir(parents=True, exist_ok=True)
-                (outdir / f"{source.stem}.pdf").write_bytes(b"%PDF-1.7\nfixture\n%%EOF\n")
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\nfixture\n%%EOF\n")
 
             with patch("px.project.run_checked", side_effect=fake_latexmk):
                 manifest = build_documents(root, config, keep_going=True)
