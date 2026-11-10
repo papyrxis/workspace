@@ -22,7 +22,7 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     init = commands.add_parser("init", help="create a project configuration and a basic source")
-    init.add_argument("--type", default="book", choices=("book", "booklet", "article", "cv"))
+    init.add_argument("--type", default="book", choices=("book", "booklet", "article", "cv", "collection"))
     init.add_argument("--language", default="en", choices=("en", "fa", "both"))
     init.add_argument("--force", action="store_true")
 
