@@ -96,6 +96,36 @@ build:
             plan = plan_documents(root, config)
             self.assertEqual(plan[0]["output"].relative_to(root).as_posix(), "build/en/main.pdf")
 
+    def test_v1_build_and_verify_keep_legacy_output_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "main.tex").write_text("fixture", encoding="utf-8")
+            (root / "workspace.yml").write_text(
+                """schema_version: 1
+project:
+  name: legacy-book
+  type: article
+  languages: [en]
+build:
+  output_dir: build
+  entries:
+    en: {source: main.tex, engine: pdflatex}
+""",
+                encoding="utf-8",
+            )
+            config = load_config(root)
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\\nfixture\\n%%EOF\\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, keep_going=True)
+            self.assertTrue((root / "build/en/main.pdf").is_file())
+            self.assertEqual(verify_manifest(root, config)["checked"], 1)
+
     def test_rejects_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
