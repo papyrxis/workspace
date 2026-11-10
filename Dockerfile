@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       texlive-lang-arabic \
       fonts-lmodern \
       fonts-dejavu-core \
+      fonts-hosny-amiri \
       pandoc \
       make \
       git \
@@ -22,6 +23,7 @@ WORKDIR /opt/workspace
 COPY pyproject.toml README.md ./
 COPY px ./px
 COPY common ./common
+COPY examples ./examples
 RUN python -m pip install --no-cache-dir .
 
 RUN useradd --create-home --uid 10001 px     && mkdir -p /workspace     && chown -R px:px /workspace
