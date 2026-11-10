@@ -10,7 +10,7 @@ fail_fast = true
 
 [tasks.compile]
 description = "Compile the shared Python workspace package"
-command = ["python", "-m", "compileall", "-q", "px"]
+command = ["python", "-m", "compileall", "-q", "px", "scripts"]
 
 [tasks.test]
 description = "Run configuration, scaffold and tooling tests"
@@ -35,3 +35,8 @@ skip = ["install"]
 source = "px"
 tests = "tests"
 runner = "unittest"
+
+[tasks.docker-smoke]
+description = "Build the container image and exercise its CLI and example project"
+command = ["bash", "scripts/docker-smoke.sh"]
+depends_on = ["test"]
