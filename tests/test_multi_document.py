@@ -65,6 +65,27 @@ documents:
             plan = plan_documents(root, config, "handbook", "fa")
             self.assertEqual([(x["document_id"], x["edition"]) for x in plan], [("handbook", "fa")])
 
+    def test_v1_projects_keep_the_historical_output_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "main.tex").write_text("fixture", encoding="utf-8")
+            (root / "workspace.yml").write_text(
+                """schema_version: 1
+project:
+  name: legacy-book
+  type: book
+  languages: [en]
+build:
+  output_dir: build
+  entries:
+    en: {source: main.tex, engine: pdflatex}
+""",
+                encoding="utf-8",
+            )
+            config = load_config(root)
+            plan = plan_documents(root, config)
+            self.assertEqual(plan[0]["output"].relative_to(root).as_posix(), "build/en/main.pdf")
+
     def test_rejects_traversal_and_bad_engine(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -92,8 +113,13 @@ documents:
             self.assertEqual(manifest["summary"]["completed"], 4)
             self.assertEqual(len(list_documents(root, config)), 4)
             self.assertEqual(verify_manifest(root, config)["checked"], 4)
+            from px.project import clean_document
+            clean_document(root, config, "handbook")
+            remaining = list_documents(root, config)
+            self.assertFalse(any(row["document_id"] == "handbook" for row in remaining))
+            self.assertEqual(verify_manifest(root, config)["checked"], 2)
 
-            pdf = root / "build/handbook/fa/fa.pdf"
+            pdf = root / "build/paper-a/en/a.pdf"
             pdf.write_bytes(b"%PDF-1.7\ntampered\n%%EOF\n")
             with self.assertRaises(BuildError):
                 verify_manifest(root, config)
