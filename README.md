@@ -144,7 +144,7 @@ px verify
 px clean arliz-volume-2
 ~~~
 
-Outputs are isolated under `build/<document-id>/<edition>/`; `build/manifest.json` records every successful artifact and its SHA-256. See [the multi-document guide](docs/multi-document.md) and the runnable [multi-document fixture](examples/multi-document/README.md).
+Outputs are isolated under `build/<document-id>/<edition>/`; `build/manifest.json` records every successful artifact and its SHA-256. See [the multi-document guide](docs/multi-document.md), the runnable [single-article fixture](examples/single-article/README.md), and the [multi-document fixture](examples/multi-document/README.md).
 
 ## Release assets and containers
 
