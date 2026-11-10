@@ -204,6 +204,9 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise BuildError(f"cannot read build manifest: {exc}") from exc
+    results = manifest.get("results")
+    if not isinstance(results, list) or not results:
+        raise BuildError("build manifest contains no artifact results")
     checked = 0
     errors = []
     for record in manifest.get("results", []):
@@ -221,3 +224,36 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     if errors:
         raise BuildError("manifest verification failed: " + "; ".join(errors))
     return {"checked": checked, "manifest": manifest_path.relative_to(base).as_posix()}
+
+
+def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -> None:
+    """Remove one v2 document's generated outputs and reconcile the manifest."""
+    if config.get("schema_version") != 2:
+        raise BuildError("selective clean requires schema_version 2")
+    base = Path(root).expanduser().resolve()
+    documents = _documents(config)
+    if document_id not in documents:
+        raise BuildError(f"unknown document {document_id!r}; run px list")
+    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    target = _inside(base, str(Path(config["build"].get("output_dir", "build")) / document_id),
+                     "clean target")
+    if target == base or target == output_root:
+        raise BuildError("refusing to clean project root or shared build directory")
+    manifest_path = output_root / "manifest.json"
+    manifest = None
+    if manifest_path.is_file():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise BuildError(f"cannot reconcile build manifest before clean: {exc}") from exc
+    shutil.rmtree(target, ignore_errors=True)
+    if manifest is not None:
+        manifest["results"] = [r for r in manifest.get("results", []) if r.get("document_id") != document_id]
+        manifest["summary"] = {
+            "planned": len(manifest["results"]),
+            "completed": sum(r.get("status") == "success" for r in manifest["results"]),
+            "failed": sum(r.get("status") == "failed" for r in manifest["results"]),
+            "dry_run": False,
+        }
+        _write_manifest(manifest_path, manifest)
+    log("info", f"Removed generated output for {document_id}", component="clean", status="ok")
