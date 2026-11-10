@@ -214,9 +214,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "build":
             selected_edition = args.edition
             if args.language:
-                if selected_edition or len(args.language) != 1:
-                    raise ValueError("select exactly one edition using --edition or --language")
-                selected_edition = args.language[0]
+                if selected_edition:
+                    raise ValueError("use either --edition or --language, not both")
+                selected_edition = args.language[0] if len(args.language) == 1 else args.language
             build_documents(root, config, args.document_id, selected_edition,
                             dry_run=args.dry_run, keep_going=args.keep_going)
             return 0
