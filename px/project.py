@@ -129,6 +129,22 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
                     keep_going: bool = False) -> dict[str, Any]:
     base = Path(root).expanduser().resolve()
     plan = plan_documents(base, config, document_id, edition)
+    manifest_path = base / config["build"].get("output_dir", "build") / "manifest.json"
+    previous_records: list[dict[str, Any]] = []
+    if not dry_run and manifest_path.is_file():
+        try:
+            previous_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            previous_records = previous_data.get("results", [])
+            if not isinstance(previous_records, list):
+                raise ValueError("results must be a list")
+        except (OSError, ValueError, TypeError) as exc:
+            raise BuildError(f"cannot preserve previous build manifest: {exc}") from exc
+    selected_keys = {(item["document_id"], item["edition"]) for item in plan}
+    expected_keys = {
+        (doc_id, edition_id)
+        for doc_id, document in _documents(config).items()
+        for edition_id in document["editions"]
+    }
     records: list[dict[str, Any]] = []
     failures = 0
     for item in plan:
@@ -137,6 +153,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
                    "-file-line-error", f"-jobname={item['output'].stem}", f"-outdir={item['output_dir']}", str(item["source"])]
         record = {k: item[k] for k in ("document_id", "document_type", "title", "edition", "engine")}
         record.update(source=item["source"].relative_to(base).as_posix(),
+                      source_sha256=_sha256(item["source"]),
                       output=item["output"].relative_to(base).as_posix(), status="planned")
         if dry_run:
             records.append(record)
@@ -162,16 +179,29 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
                 records.append(record)
                 break
         records.append(record)
+    if dry_run:
+        all_records = records
+    else:
+        preserved = [
+            row for row in previous_records
+            if (row.get("document_id"), row.get("edition")) not in selected_keys
+            and (row.get("document_id"), row.get("edition")) in expected_keys
+        ]
+        all_records = preserved + records
+        all_records.sort(key=lambda row: (row.get("document_id", ""), row.get("edition", "")))
+    completed = sum(row.get("status") == "success" for row in all_records)
+    failed_total = sum(row.get("status") == "failed" for row in all_records)
     manifest = {
         "manifest_version": 1,
         "schema_version": config["schema_version"],
         "project": config["project"].get("name", base.name),
-        "results": records,
-        "summary": {"planned": len(plan), "completed": sum(r["status"] == "success" for r in records),
-                    "failed": failures, "dry_run": dry_run},
+        "results": all_records,
+        "summary": {"planned": len(expected_keys), "attempted": len(records),
+                    "completed": completed, "failed": failed_total,
+                    "pending": max(0, len(expected_keys) - len(all_records)), "dry_run": dry_run},
     }
     if not dry_run:
-        _write_manifest(base / config["build"].get("output_dir", "build") / "manifest.json", manifest)
+        _write_manifest(manifest_path, manifest)
     if failures:
         raise BuildError(f"{failures} document edition(s) failed; see build manifest")
     return manifest
@@ -211,15 +241,28 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     results = manifest.get("results")
     if not isinstance(results, list) or not results:
         raise BuildError("build manifest contains no artifact results")
-    checked = 0
+    results = manifest.get("results", [])
+    if not isinstance(results, list):
+        raise BuildError("build manifest results must be a list")
+    by_key = {(row.get("document_id"), row.get("edition")): row for row in results if isinstance(row, dict)}
+    expected = plan_documents(base, config)
     errors = []
-    for record in manifest.get("results", []):
+    for item in expected:
+        key = (item["document_id"], item["edition"])
+        if key not in by_key:
+            errors.append(f"{key[0]}/{key[1]}: missing from build manifest")
+    checked = 0
+    for record in results:
         if record.get("status") != "success":
             errors.append(f"{record.get('document_id')}/{record.get('edition')}: status is not success")
             continue
         output = _inside(base, record.get("output", ""), "manifest output")
         if not valid_pdf(output):
             errors.append(f"{record['document_id']}/{record['edition']}: invalid PDF")
+            continue
+        source = _inside(base, record.get("source", ""), "manifest source")
+        if not source.is_file() or _sha256(source) != record.get("source_sha256"):
+            errors.append(f"{record['document_id']}/{record['edition']}: source changed since build")
             continue
         if output.stat().st_size != record.get("size_bytes") or _sha256(output) != record.get("sha256"):
             errors.append(f"{record['document_id']}/{record['edition']}: size or SHA-256 mismatch")
@@ -253,10 +296,15 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
     shutil.rmtree(target, ignore_errors=True)
     if manifest is not None:
         manifest["results"] = [r for r in manifest.get("results", []) if r.get("document_id") != document_id]
+        expected_remaining = sum(len(doc["editions"]) for key, doc in documents.items() if key != document_id)
+        completed = sum(r.get("status") == "success" for r in manifest["results"])
+        failed = sum(r.get("status") == "failed" for r in manifest["results"])
         manifest["summary"] = {
-            "planned": len(manifest["results"]),
-            "completed": sum(r.get("status") == "success" for r in manifest["results"]),
-            "failed": sum(r.get("status") == "failed" for r in manifest["results"]),
+            "planned": expected_remaining,
+            "attempted": len(manifest["results"]),
+            "completed": completed,
+            "failed": failed,
+            "pending": max(0, expected_remaining - len(manifest["results"])),
             "dry_run": False,
         }
         _write_manifest(manifest_path, manifest)
