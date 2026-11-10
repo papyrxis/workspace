@@ -18,6 +18,14 @@ _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 _ENGINES = {"pdflatex": "-pdf", "xelatex": "-xelatex", "lualatex": "-lualatex"}
 
 
+def _reject_symlink_components(root: Path, relative: str | Path, label: str) -> None:
+    current = root
+    for part in Path(relative).parts:
+        current = current / part
+        if current.is_symlink():
+            raise BuildError(f"{label} must not traverse a symbolic link: {current}")
+
+
 def _documents(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Return a common document/edition model for v1 and v2 projects."""
     if config.get("schema_version") == 1:
@@ -40,7 +48,9 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
                    edition: str | list[str] | None = None) -> list[dict[str, Any]]:
     """Validate the complete selected build plan before any compiler is started."""
     base = Path(root).expanduser().resolve()
-    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    output_relative = config["build"].get("output_dir", "build")
+    _reject_symlink_components(base, output_relative, "build.output_dir")
+    output_root = _inside(base, output_relative, "build.output_dir")
     if output_root == base:
         raise BuildError("build.output_dir cannot be the project root")
     documents = _documents(config)
@@ -80,6 +90,7 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
                 output_relative = output_relative / doc_id / edition_id
             else:
                 output_relative = output_relative / edition_id
+            _reject_symlink_components(base, output_relative, f"{doc_id}/{edition_id}.output")
             output_dir = _inside(base, output_relative.as_posix(), f"{doc_id}/{edition_id}.output")
             destination = output_dir / f"{output_name}.pdf"
             if destination in destinations:
@@ -133,6 +144,8 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
     if output_root == base:
         raise BuildError("build.output_dir cannot be the project root")
     manifest_path = output_root / "manifest.json"
+    if manifest_path.is_symlink():
+        raise BuildError("build manifest must not be a symbolic link")
     previous_records: list[dict[str, Any]] = []
     if not dry_run and manifest_path.is_file():
         try:
@@ -214,10 +227,14 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
 
 def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, Any]]:
     base = Path(root).expanduser().resolve()
-    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    output_relative = config["build"].get("output_dir", "build")
+    _reject_symlink_components(base, output_relative, "build.output_dir")
+    output_root = _inside(base, output_relative, "build.output_dir")
     if output_root == base:
         raise BuildError("build.output_dir cannot be the project root")
     manifest_path = output_root / "manifest.json"
+    if manifest_path.is_symlink():
+        raise BuildError("build manifest must not be a symbolic link")
     statuses: dict[tuple[str, str], dict[str, Any]] = {}
     if manifest_path.is_file():
         try:
@@ -241,10 +258,14 @@ def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, A
 
 def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     base = Path(root).expanduser().resolve()
-    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    output_relative = config["build"].get("output_dir", "build")
+    _reject_symlink_components(base, output_relative, "build.output_dir")
+    output_root = _inside(base, output_relative, "build.output_dir")
     if output_root == base:
         raise BuildError("build.output_dir cannot be the project root")
     manifest_path = output_root / "manifest.json"
+    if manifest_path.is_symlink():
+        raise BuildError("build manifest must not be a symbolic link")
     if not manifest_path.is_file():
         raise BuildError("build manifest not found; run px build first")
     try:
@@ -257,8 +278,13 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(results, list) or not results or not all(isinstance(row, dict) for row in results):
         raise BuildError("build manifest must contain a non-empty list of artifact result objects")
     by_key = {(row.get("document_id"), row.get("edition")): row for row in results}
+    if len(by_key) != len(results):
+        raise BuildError("build manifest contains duplicate document/edition records")
     expected = plan_documents(base, config)
+    expected_keys = {(item["document_id"], item["edition"]) for item in expected}
     errors = []
+    for unexpected in set(by_key) - expected_keys:
+        errors.append(f"{unexpected[0]}/{unexpected[1]}: unexpected manifest entry")
     for item in expected:
         key = (item["document_id"], item["edition"])
         if key not in by_key:
@@ -293,13 +319,18 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
     documents = _documents(config)
     if document_id not in documents:
         raise BuildError(f"unknown document {document_id!r}; run px list")
-    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
-    target = _inside(base, str(Path(config["build"].get("output_dir", "build")) / document_id),
-                     "clean target")
+    output_relative = config["build"].get("output_dir", "build")
+    target_relative = Path(output_relative) / document_id
+    _reject_symlink_components(base, output_relative, "build.output_dir")
+    _reject_symlink_components(base, target_relative, "clean target")
+    output_root = _inside(base, output_relative, "build.output_dir")
+    target = _inside(base, target_relative.as_posix(), "clean target")
     if target == base or target == output_root:
         raise BuildError("refusing to clean project root or shared build directory")
     manifest_path = output_root / "manifest.json"
     manifest = None
+    if manifest_path.is_symlink():
+        raise BuildError("build manifest must not be a symbolic link")
     if manifest_path.is_file():
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -309,7 +340,10 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
                 raise ValueError("manifest results must be objects")
         except (OSError, ValueError) as exc:
             raise BuildError(f"cannot reconcile build manifest before clean: {exc}") from exc
-    shutil.rmtree(target, ignore_errors=True)
+    if target.exists():
+        if not target.is_dir():
+            raise BuildError(f"refusing to remove non-directory build output: {target}")
+        shutil.rmtree(target)
     if manifest is not None:
         manifest["results"] = [r for r in manifest.get("results", []) if r.get("document_id") != document_id]
         expected_remaining = sum(len(doc["editions"]) for key, doc in documents.items() if key != document_id)
