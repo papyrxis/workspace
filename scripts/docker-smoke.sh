@@ -10,7 +10,8 @@ docker run --rm --entrypoint python "$image" -c "from px.logger import native_lo
 # Exercise a complete real LaTeX build inside the container, not a mocked compiler.
 project="$(mktemp -d)"
 trap 'rm -rf "$project"' EXIT
-docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" init --type article --language en
+mkdir -p "$project/.home"
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/workspace/.home -v "$project:/workspace" "$image" init --type article --language en
 cat > "$project/main.tex" <<'EOF'
 \documentclass[11pt]{article}
 \input{article/ieee.tex}
@@ -22,7 +23,7 @@ cat > "$project/main.tex" <<'EOF'
 This document is built using the shared Workspace IEEE article preset.
 \end{document}
 EOF
-docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" build
-docker run --rm --user "$(id -u):$(id -g)" -v "$project:/workspace" "$image" verify
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/workspace/.home -v "$project:/workspace" "$image" build
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/workspace/.home -v "$project:/workspace" "$image" verify
 
 echo "Docker image, native logger, LaTeX build and manifest verification passed: $image"
