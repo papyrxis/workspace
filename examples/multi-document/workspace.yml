@@ -20,6 +20,13 @@ documents:
       en:
         source: papers/research-note/en.tex
         engine: pdflatex
+  second-paper:
+    type: article
+    title: A Companion Research Note
+    editions:
+      en:
+        source: papers/research-note/companion.tex
+        engine: pdflatex
   bilingual-handbook:
     type: booklet
     title: Publishing with Workspace
