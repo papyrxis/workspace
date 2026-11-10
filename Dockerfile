@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-lmodern \
       lmodern \
       fonts-dejavu-core \
+      fonts-urw-base35 \
+      texlive-fonts-recommended \
       fonts-hosny-amiri \
       pandoc \
       make \
