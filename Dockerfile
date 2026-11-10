@@ -9,6 +9,8 @@ RUN git clone --depth 1 --branch v0.1.0 https://github.com/m-mdy-m/log.c.git /tm
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/opt/mmlog \
       -DBUILD_SHARED_LIBS=ON \
+      -DM_MDY_M_LOG_BUILD_TESTS=OFF \
+      -DM_MDY_M_LOG_BUILD_EXAMPLES=OFF \
     && cmake --build /tmp/log.c/build --parallel \
     && cmake --install /tmp/log.c/build
 
