@@ -103,7 +103,7 @@ build/
 └── manifest.json
 ~~~
 
-The manifest is written atomically and has a stable ordering. Successful result records contain document ID/type/title, edition, source, selected engine, output path, byte size, and SHA-256. Failed editions contain a failure status and diagnostic message. The summary records planned/completed/failed counts and whether the command was a dry run.
+The shared Workspace components, document presets and package snippets are included in the installable wheel; the project source directory and project `tex/`/`configs/` overrides are searched before shared resources. The manifest is written atomically and has a stable ordering. Successful result records contain document ID/type/title, edition, source, selected engine, output path, byte size, and SHA-256. Failed editions contain a failure status and diagnostic message. The summary records planned/completed/failed counts and whether the command was a dry run.
 
 `px verify` rejects missing or malformed PDFs and any artifact whose size or SHA-256 differs from the manifest. The manifest is a build receipt, not a signed provenance statement; use protected CI and release attestations when publisher authenticity is required.
 
