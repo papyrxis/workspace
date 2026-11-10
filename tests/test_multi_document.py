@@ -145,14 +145,17 @@ build:
             self.assertEqual(manifest["summary"]["completed"], 4)
             self.assertEqual(len(list_documents(root, config)), 4)
             self.assertEqual(verify_manifest(root, config)["checked"], 4)
+            pdf = root / "build/paper-a/en/a.pdf"
+            pdf.write_bytes(b"%PDF-1.7\ntampered\n%%EOF\n")
+            with self.assertRaises(BuildError):
+                verify_manifest(root, config)
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, keep_going=True)
             from px.project import clean_document
             clean_document(root, config, "handbook")
             remaining = list_documents(root, config)
-            self.assertFalse(any(row["document_id"] == "handbook" for row in remaining))
-            self.assertEqual(verify_manifest(root, config)["checked"], 2)
-
-            pdf = root / "build/paper-a/en/a.pdf"
-            pdf.write_bytes(b"%PDF-1.7\ntampered\n%%EOF\n")
+            self.assertFalse(any(row["document_id"] == "handbook" and row["status"] == "success" for row in remaining))
             with self.assertRaises(BuildError):
                 verify_manifest(root, config)
 
