@@ -58,6 +58,16 @@ documents:
             self.assertEqual({x["engine"] for x in plan}, {"pdflatex", "xelatex", "lualatex"})
             self.assertEqual(plan[0]["output"].relative_to(root).as_posix(), "build/paper-a/en/a.pdf")
 
+    def test_output_names_are_isolated_between_documents(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            config["documents"]["paper-a"]["editions"]["en"]["output_name"] = "shared"
+            config["documents"]["paper-b"]["editions"]["en"]["output_name"] = "shared"
+            plan = plan_documents(root, config)
+            targets = [x["output"] for x in plan if x["document_id"] in {"paper-a", "paper-b"}]
+            self.assertEqual(len(set(targets)), 2)
+
     def test_document_and_edition_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -95,6 +105,28 @@ build:
             path.write_text(text, encoding="utf-8")
             with self.assertRaises(ConfigError):
                 load_config(root)
+
+    def test_partial_failures_are_recorded_and_return_nonzero(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+
+            def partially_fail(command, *, cwd, env, timeout):
+                source = Path(command[-1])
+                if source.name == "a.tex":
+                    raise RuntimeError("fixture compiler failure")
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\\nfixture\\n%%EOF\\n")
+
+            with patch("px.project.run_checked", side_effect=partially_fail):
+                with self.assertRaises(BuildError):
+                    build_documents(root, config, keep_going=True)
+            import json
+            manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["summary"]["failed"], 1)
+            self.assertEqual(manifest["summary"]["completed"], 3)
 
     def test_build_manifest_and_sha_verification(self):
         with tempfile.TemporaryDirectory() as tmp:
