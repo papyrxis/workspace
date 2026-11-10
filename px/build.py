@@ -8,6 +8,7 @@ from typing import Any, Iterable
 
 from .logger import log
 from .process import run_checked
+from .resources import tex_inputs
 
 _ENGINE_FLAGS = {"pdflatex": "-pdf", "xelatex": "-xelatex", "lualatex": "-lualatex"}
 
@@ -71,8 +72,7 @@ def build_project(root: str | Path, config: dict[str, Any], languages: Iterable[
             print(" ".join(command))
             continue
         output.mkdir(parents=True, exist_ok=True)
-        tex_paths = [f"{source.parent}{os.path.sep}{os.path.sep}", f"{base / 'tex'}{os.path.sep}{os.path.sep}", f"{base / 'configs'}{os.path.sep}{os.path.sep}"]
-        env = {"TEXINPUTS": os.pathsep.join(tex_paths) + os.pathsep}
+        env = {"TEXINPUTS": tex_inputs(base, source)}
         run_checked(command, cwd=base, env=env, timeout=int(build_cfg.get("timeout_seconds", 1800)))
         if not valid_pdf(expected):
             raise BuildError(f"{language}: LaTeX command completed but PDF is missing or incomplete: {expected}")
