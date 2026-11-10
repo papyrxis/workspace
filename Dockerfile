@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS log-build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential cmake git \
+      build-essential ca-certificates cmake git \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --branch v0.1.0 https://github.com/m-mdy-m/log.c.git /tmp/log.c \
@@ -21,6 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     LD_LIBRARY_PATH=/opt/mmlog/lib
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
       latexmk \
       texlive-latex-base \
       texlive-latex-recommended \
