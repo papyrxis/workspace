@@ -148,7 +148,7 @@ Outputs are isolated under `build/<document-id>/<edition>/`; `build/manifest.jso
 
 Push a SemVer tag (including prerelease tags such as `v0.3.0-beta.1`) to invoke the shared `m-mdy-m/pipeline` release workflow. It tests the package, builds wheel and sdist distributions, creates a deterministic self-verifying ZIP bundle, and attaches all files plus checksums to the GitHub Release. Prerelease tags are published as GitHub prereleases by Pipeline.
 
-The Docker image is published to GHCR as `ghcr.io/papyrxis/workspace`. Configure repository Actions secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to additionally publish to Docker Hub as `<username>/papyrxis-workspace`. See [release documentation](docs/releasing.md).
+The installable Python distribution bundle is published as a GHCR OCI package at `ghcr.io/papyrxis/papyrxis-workspace`; the Docker image is published separately as `ghcr.io/papyrxis/workspace`. Configure repository Actions secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to additionally publish to Docker Hub as `<username>/papyrxis-workspace`. See [release documentation](docs/releasing.md).
 
 ~~~sh
 docker pull ghcr.io/papyrxis/workspace:latest
