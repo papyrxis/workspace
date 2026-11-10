@@ -2,6 +2,16 @@
 
 Schema v2 lets one repository describe independent publications without introducing separate build engines. A document has a stable ID, a document profile, metadata, and one or more editions. An edition is commonly a language, but it can also represent another independently built variant.
 
+## Initialize a collection
+
+Start a schema-v2 collection with a bilingual first article:
+
+~~~sh
+px init --type collection --language both
+~~~
+
+This creates a `first-article` document with `en` and `fa` editions. Add further documents under the top-level `documents` mapping; each one should have its own stable ID and one or more editions.
+
 ## Configuration
 
 ~~~yaml
