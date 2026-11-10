@@ -128,3 +128,31 @@ Read docs/architecture.md, docs/getting-started.md, docs/configuration.md, docs/
 ## License
 
 Workspace tooling is MIT-licensed. Document contents created with Workspace retain the license chosen by each publishing project. Third-party fonts, LaTeX packages, CSL files and templates retain their respective licenses.
+
+## Multi-document publishing (schema v2)
+
+Schema v1 remains supported for existing single-document projects. For a repository containing independent papers, booklets or volumes, use schema v2 with named documents and editions:
+
+~~~sh
+cd examples/multi-document
+px list
+px build
+px build bilingual-handbook --edition fa
+px verify
+px clean arliz-volume-2
+~~~
+
+Outputs are isolated under `build/<document-id>/<edition>/`; `build/manifest.json` records every successful artifact and its SHA-256. See [the multi-document guide](docs/multi-document.md) and the runnable [multi-document fixture](examples/multi-document/README.md).
+
+## Release assets and containers
+
+Push a SemVer tag (including prerelease tags such as `v0.3.0-beta.1`) to invoke the shared `m-mdy-m/pipeline` release workflow. It tests the package, builds wheel and sdist distributions, creates a deterministic self-verifying ZIP bundle, and attaches all files plus checksums to the GitHub Release. Prerelease tags are published as GitHub prereleases by Pipeline.
+
+The Docker image is published to GHCR as `ghcr.io/papyrxis/workspace`. Configure repository Actions secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to additionally publish to Docker Hub as `<username>/papyrxis-workspace`. See [release documentation](docs/releasing.md).
+
+~~~sh
+docker pull ghcr.io/papyrxis/workspace:latest
+docker run --rm ghcr.io/papyrxis/workspace:latest --help
+# Mount a project to build it:
+docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/papyrxis/workspace:latest build
+~~~
