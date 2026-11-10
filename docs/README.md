@@ -18,3 +18,5 @@
 - [Release workflow](releasing.md) — branch flow, changelog, tags and push.
 
 - [Multi-document projects (schema v2)](multi-document.md)
+
+- [Shared logging with m-mdy-m/log.c](logging.md)
