@@ -57,7 +57,7 @@ The build produces:
 
 - Python wheel and source distribution, checked with `twine check`.
 - `papyrxis-workspace-release.zip`, a deterministic bundle containing both distributions, `PACKAGE-MANIFEST.json` and `SHA256SUMS`.
-- Pipeline-generated release metadata, manifest and top-level checksums.
+- Pipeline-generated release metadata, manifest and top-level checksums, plus keyless Sigstore signatures and GitHub artifact provenance attestations.
 
 The bundle is verified before it is attached. Verify a downloaded bundle with:
 
