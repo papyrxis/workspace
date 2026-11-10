@@ -130,7 +130,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
     for item in plan:
         key = f"{item['document_id']}/{item['edition']}"
         command = ["latexmk", _ENGINES[item["engine"]], "-interaction=nonstopmode", "-halt-on-error",
-                   "-file-line-error", f"-outdir={item['output_dir']}", str(item["source"])]
+                   "-file-line-error", f"-jobname={item['output'].stem}", f"-outdir={item['output_dir']}", str(item["source"])]
         record = {k: item[k] for k in ("document_id", "document_type", "title", "edition", "engine")}
         record.update(source=item["source"].relative_to(base).as_posix(),
                       output=item["output"].relative_to(base).as_posix(), status="planned")
