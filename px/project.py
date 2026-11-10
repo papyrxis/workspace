@@ -129,14 +129,17 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
                     keep_going: bool = False) -> dict[str, Any]:
     base = Path(root).expanduser().resolve()
     plan = plan_documents(base, config, document_id, edition)
-    manifest_path = base / config["build"].get("output_dir", "build") / "manifest.json"
+    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    if output_root == base:
+        raise BuildError("build.output_dir cannot be the project root")
+    manifest_path = output_root / "manifest.json"
     previous_records: list[dict[str, Any]] = []
     if not dry_run and manifest_path.is_file():
         try:
             previous_data = json.loads(manifest_path.read_text(encoding="utf-8"))
             previous_records = previous_data.get("results", [])
-            if not isinstance(previous_records, list):
-                raise ValueError("results must be a list")
+            if not isinstance(previous_records, list) or not all(isinstance(row, dict) for row in previous_records):
+                raise ValueError("results must be a list of objects")
         except (OSError, ValueError, TypeError) as exc:
             raise BuildError(f"cannot preserve previous build manifest: {exc}") from exc
     selected_keys = {(item["document_id"], item["edition"]) for item in plan}
@@ -209,7 +212,10 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
 
 def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, Any]]:
     base = Path(root).expanduser().resolve()
-    manifest_path = base / config["build"].get("output_dir", "build") / "manifest.json"
+    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    if output_root == base:
+        raise BuildError("build.output_dir cannot be the project root")
+    manifest_path = output_root / "manifest.json"
     statuses: dict[tuple[str, str], dict[str, Any]] = {}
     if manifest_path.is_file():
         try:
@@ -231,20 +237,22 @@ def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, A
 
 def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     base = Path(root).expanduser().resolve()
-    manifest_path = base / config["build"].get("output_dir", "build") / "manifest.json"
+    output_root = _inside(base, config["build"].get("output_dir", "build"), "build.output_dir")
+    if output_root == base:
+        raise BuildError("build.output_dir cannot be the project root")
+    manifest_path = output_root / "manifest.json"
     if not manifest_path.is_file():
         raise BuildError("build manifest not found; run px build first")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise BuildError(f"cannot read build manifest: {exc}") from exc
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != config["schema_version"]:
+        raise BuildError("build manifest schema does not match the project configuration")
     results = manifest.get("results")
-    if not isinstance(results, list) or not results:
-        raise BuildError("build manifest contains no artifact results")
-    results = manifest.get("results", [])
-    if not isinstance(results, list):
-        raise BuildError("build manifest results must be a list")
-    by_key = {(row.get("document_id"), row.get("edition")): row for row in results if isinstance(row, dict)}
+    if not isinstance(results, list) or not results or not all(isinstance(row, dict) for row in results):
+        raise BuildError("build manifest must contain a non-empty list of artifact result objects")
+    by_key = {(row.get("document_id"), row.get("edition")): row for row in results}
     expected = plan_documents(base, config)
     errors = []
     for item in expected:
