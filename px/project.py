@@ -72,8 +72,12 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             output_name = raw.get("output_name", source.stem)
             if not isinstance(output_name, str) or not _ID.fullmatch(output_name):
                 raise BuildError(f"{doc_id}/{edition_id}: output_name must be a safe filename stem")
-            output_dir = _inside(base, str(Path(config["build"].get("output_dir", "build")) / doc_id / edition_id),
-                                 f"{doc_id}/{edition_id}.output")
+            output_relative = Path(config["build"].get("output_dir", "build"))
+            if config["schema_version"] == 2:
+                output_relative = output_relative / doc_id / edition_id
+            else:
+                output_relative = output_relative / edition_id
+            output_dir = _inside(base, output_relative.as_posix(), f"{doc_id}/{edition_id}.output")
             destination = output_dir / f"{output_name}.pdf"
             if destination in destinations:
                 raise BuildError(f"output collision: multiple editions target {destination.relative_to(base)}")
@@ -183,8 +187,9 @@ def list_documents(root: str | Path, config: dict[str, Any]) -> list[dict[str, A
     for doc_id, doc in _documents(config).items():
         for edition_id, edition in doc["editions"].items():
             result = statuses.get((doc_id, edition_id), {})
+            source = edition if isinstance(edition, str) else edition.get("source", "")
             rows.append({"document_id": doc_id, "title": doc.get("title", doc_id),
-                         "edition": edition_id, "source": edition.get("source", ""),
+                         "edition": edition_id, "source": source,
                          "status": result.get("status", "not-built"),
                          "output": result.get("output", "")})
     return rows
