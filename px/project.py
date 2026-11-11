@@ -348,16 +348,25 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     return {"checked": checked, "manifest": manifest_path.relative_to(base).as_posix()}
 
 
-def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -> None:
-    """Remove one v2 document's generated outputs and reconcile the manifest."""
+def clean_document(root: str | Path, config: dict[str, Any], document_id: str,
+                   edition: str | None = None) -> None:
+    """Remove one v2 document, or one of its editions, and reconcile the manifest."""
     if config.get("schema_version") != 2:
         raise BuildError("selective clean requires schema_version 2")
     base = Path(root).expanduser().resolve()
     documents = _documents(config)
     if document_id not in documents:
         raise BuildError(f"unknown document {document_id!r}; run px list")
+    configured_editions = documents[document_id]["editions"]
+    if edition is not None and edition not in configured_editions:
+        raise BuildError(
+            f"unknown edition {edition!r} for {document_id}; "
+            f"configured editions: {', '.join(configured_editions)}"
+        )
     output_relative = config["build"].get("output_dir", "build")
     target_relative = Path(output_relative) / document_id
+    if edition is not None:
+        target_relative /= edition
     _reject_symlink_components(base, output_relative, "build.output_dir")
     _reject_symlink_components(base, target_relative, "clean target")
     output_root = _inside(base, output_relative, "build.output_dir")
@@ -383,10 +392,22 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
             raise BuildError(f"refusing to remove non-directory build output: {target}")
         shutil.rmtree(target)
     if manifest is not None:
-        manifest["results"] = [r for r in manifest.get("results", []) if r.get("document_id") != document_id]
-        expected_remaining = sum(len(doc["editions"]) for key, doc in documents.items() if key != document_id)
-        completed = sum(r.get("status") == "success" for r in manifest["results"])
-        failed = sum(r.get("status") == "failed" for r in manifest["results"])
+        manifest["results"] = [
+            row for row in manifest.get("results", [])
+            if not (
+                row.get("document_id") == document_id
+                and (edition is None or row.get("edition") == edition)
+            )
+        ]
+        expected_remaining = sum(
+            len(document["editions"])
+            for key, document in documents.items()
+            if key != document_id
+        )
+        if edition is not None:
+            expected_remaining += len(configured_editions) - 1
+        completed = sum(row.get("status") == "success" for row in manifest["results"])
+        failed = sum(row.get("status") == "failed" for row in manifest["results"])
         manifest["summary"] = {
             "planned": expected_remaining,
             "attempted": len(manifest["results"]),
@@ -396,4 +417,6 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
             "dry_run": False,
         }
         _write_manifest(manifest_path, manifest)
-    log("info", f"Removed generated output for {document_id}", component="clean", status="ok")
+    label = f"{document_id}/{edition}" if edition is not None else document_id
+    log("info", f"Removed generated output for {label}", component="clean", status="ok")
+

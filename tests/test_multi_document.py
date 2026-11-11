@@ -329,5 +329,31 @@ build:
                 load_config(root)
 
 
+    def test_clean_one_edition_preserves_other_edition_and_manifest_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\nfixture\n%%EOF\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, keep_going=True)
+            from px.project import clean_document
+            clean_document(root, config, "handbook", "fa")
+            self.assertTrue((root / "build/handbook/en/en.pdf").is_file())
+            self.assertFalse((root / "build/handbook/fa/fa.pdf").exists())
+            import json
+            manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            editions = {(row["document_id"], row["edition"]) for row in manifest["results"]}
+            self.assertIn(("handbook", "en"), editions)
+            self.assertNotIn(("handbook", "fa"), editions)
+            self.assertEqual(manifest["summary"]["planned"], 3)
+
+
+
 if __name__ == "__main__":
     unittest.main()

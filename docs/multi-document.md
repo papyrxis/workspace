@@ -77,6 +77,7 @@ px build booklet --edition fa
 px build volume-01 --edition en --dry-run
 px verify
 px clean volume-01
+px clean bilingual-handbook --edition fa
 px clean
 ~~~
 
@@ -86,7 +87,7 @@ The existing `px build --language en` option remains as a v1-compatible alias fo
 - `px build` builds all declared documents and editions.
 - `px build <document-id>` builds one document.
 - `px build <document-id> --edition <edition-id>` builds one edition.
-- `px clean <document-id>` removes only that document's generated output.
+- `px clean <document-id>` removes all editions of that document; add `--edition <edition-id>` to remove only one edition and keep the other editions intact.
 - `px verify` validates every successful PDF recorded in the build manifest.
 
 ## Output and manifest
