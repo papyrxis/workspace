@@ -25,6 +25,8 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--type", default="book", choices=("book", "booklet", "article", "cv", "collection"))
     init.add_argument("--language", default="en", choices=("en", "fa", "both"))
     init.add_argument("--force", action="store_true")
+    init.add_argument("--style", choices=("personal", "academic", "ieee", "technical"),
+                       help="article profile (valid for --type article or collection)")
 
     build = commands.add_parser("build", help="build all documents or a selected document")
     build.add_argument("document_id", nargs="?", help="optional document id")
@@ -65,7 +67,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _init(root: Path, kind: str, language: str, force: bool) -> Path:
+def _init(root: Path, kind: str, language: str, force: bool, style: str | None = None) -> Path:
     import yaml
 
     root = root.resolve()
@@ -73,6 +75,9 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
     config_path = root / "workspace.yml"
     if config_path.exists() and not force:
         raise FileExistsError(f"{config_path} already exists; pass --force to replace the config")
+    if style is not None and kind not in {"article", "collection"}:
+        raise ValueError("--style can only be used with --type article or collection")
+    article_style = style or "personal"
     languages = ["en", "fa"] if language == "both" else [language]
     if not languages or any(code not in {"en", "fa"} for code in languages):
         raise ValueError("language must be en, fa or both")
@@ -85,46 +90,197 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
     for code in languages:
         directory = root if len(languages) == 1 else root / code
         directories.update({directory / "figures", directory / "frontmatter", directory / "backmatter"})
-        is_book = kind == "book"
-        is_booklet = kind == "booklet"
-        if is_book:
+        doc_title = "عنوان نمونه" if code == "fa" else title
+        author = "نام نویسنده" if code == "fa" else "Your Name"
+
+        if kind in {"book", "booklet"}:
             directories.add(directory / "chapters")
-            body_path = Path("chapters/chapter-01.tex")
-            body = "\\chapter{" + ("فصل اول" if code == "fa" else "Introduction") + "}\n" + ("متن نمونه برای شروع نگارش." if code == "fa" else "A clean starting point for your book.") + "\n"
-            structure = "\\frontmatter\n\\maketitle\n\\tableofcontents\n\\mainmatter\n\\include{chapters/chapter-01}\n\\backmatter\n"
-            document_class = "\\documentclass[11pt,oneside]{book}\n"
+            chapter_path = directory / "chapters" / "chapter-01.tex"
+            chapter_title = "فصل اول" if code == "fa" else "Getting Started"
+            chapter_text = "متن نمونه برای شروع نگارش." if code == "fa" else "A clean starting point for your book."
+            generated[chapter_path] = f"\\chapter{{{chapter_title}}}\n{chapter_text}\n"
+
+            if code == "fa":
+                language_preamble = (
+                    "\\usepackage{graphicx}\n"
+                    "\\usepackage{amsmath,amssymb}\n"
+                )
+            else:
+                language_preamble = (
+                    "\\usepackage[T1]{fontenc}\n"
+                    "\\usepackage{lmodern}\n"
+                    "\\usepackage{microtype}\n"
+                    "\\usepackage{graphicx}\n"
+                    "\\usepackage{amsmath,amssymb}\n"
+                )
+            language_preamble += (
+                "\\usepackage[backend=biber,style=authoryear,sorting=nyt]{biblatex}\n"
+                "\\addbibresource{references/references.bib}\n"
+                "\\usepackage{geometry}\n"
+            )
+            if kind == "book":
+                directories.add(directory / "parts")
+                geometry = "\\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}\n"
+                structure = (
+                    "\\frontmatter\n"
+                    "\\maketitle\n"
+                    "\\input{frontmatter/preface}\n"
+                    "\\tableofcontents\n"
+                    "\\mainmatter\n"
+                    "\\include{parts/part-01}\n"
+                    "\\appendix\n"
+                    "\\input{backmatter/appendix}\n"
+                    "\\backmatter\n"
+                    "\\printbibliography\n"
+                    "\\printindex\n"
+                )
+                generated[directory / "parts" / "part-01.tex"] = (
+                    "\\part{Part I}\n"
+                    "\\include{chapters/chapter-01}\n"
+                )
+                generated[directory / "frontmatter" / "preface.tex"] = (
+                    "\\chapter*{پیشگفتار}\n\\addcontentsline{toc}{chapter}{پیشگفتار}\n"
+                    "متن پیشگفتار را اینجا بنویسید.\n"
+                    if code == "fa" else
+                    "\\chapter*{Preface}\n\\addcontentsline{toc}{chapter}{Preface}\n"
+                    "Write the purpose and intended audience of this book here.\n"
+                )
+                generated[directory / "backmatter" / "appendix.tex"] = (
+                    "\\chapter{پیوست}\nمطالب تکمیلی را اینجا قرار دهید.\n"
+                    if code == "fa" else
+                    "\\chapter{Additional Material}\nPlace supplementary material here.\n"
+                )
+                language_preamble += "\\usepackage{makeidx}\n\\makeindex\n" + geometry
+            else:
+                geometry = "\\geometry{a5paper,top=1.5cm,bottom=1.5cm,left=1.7cm,right=1.7cm}\n"
+                structure = (
+                    "\\frontmatter\n"
+                    "\\maketitle\n"
+                    "\\input{frontmatter/preface}\n"
+                    "\\tableofcontents\n"
+                    "\\mainmatter\n"
+                    "\\include{chapters/chapter-01}\n"
+                    "\\backmatter\n"
+                    "\\input{backmatter/notes}\n"
+                    "\\printbibliography\n"
+                )
+                generated[directory / "frontmatter" / "preface.tex"] = (
+                    "\\chapter*{پیشگفتار}\nمتن کوتاه پیشگفتار.\n"
+                    if code == "fa" else
+                    "\\chapter*{Preface}\nA short introduction to this booklet.\n"
+                )
+                generated[directory / "backmatter" / "notes.tex"] = (
+                    "\\chapter*{یادداشت‌ها}\n"
+                    if code == "fa" else
+                    "\\chapter*{Notes}\n"
+                )
+                language_preamble += geometry
+            language_preamble += "\\usepackage{hyperref}\n"
+            if code == "fa":
+                language_preamble += "\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n"
+            document_class = (
+                "\\documentclass[11pt,oneside,openany]{book}\n"
+                if kind == "book" else
+                "\\documentclass[10pt,oneside,openany]{book}\n"
+            )
+            generated[directory / "main.tex"] = (
+                document_class + language_preamble +
+                "\\title{" + doc_title + "}\n"
+                "\\author{" + author + "}\n"
+                "\\date{\\today}\n"
+                "\\begin{document}\n" + structure + "\\end{document}\n"
+            )
+
+        elif kind in {"article", "collection"}:
+            directories.add(directory / "sections")
+            if article_style == "ieee":
+                document_class = "\\documentclass[10pt,a4paper,twocolumn]{article}\n"
+            else:
+                document_class = "\\documentclass[11pt,a4paper]{article}\n"
+
+            if code == "fa":
+                language_preamble = (
+                    "\\usepackage{graphicx}\n"
+                    "\\usepackage{amsmath,amssymb}\n"
+                    "\\usepackage{geometry}\n"
+                )
+                if article_style != "ieee":
+                    language_preamble += "\\usepackage[backend=biber,style=authoryear,sorting=nyt]{biblatex}\n"
+                if article_style == "ieee":
+                    language_preamble += "\\geometry{a4paper,twocolumn,columnsep=0.5cm,top=2cm,bottom=2cm,left=1.5cm,right=1.5cm}\n"
+                    language_preamble += "\\usepackage{cite}\n"
+                else:
+                    language_preamble += "\\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}\n"
+                    if article_style == "academic":
+                        language_preamble += "\\usepackage{amsthm}\n"
+                language_preamble += (
+                    "\\usepackage{hyperref}\n"
+                    "\\usepackage{xepersian}\n"
+                    "\\settextfont{Vazirmatn}\n"
+                )
+            else:
+                language_preamble = f"\\input{{common/presets/article/{article_style}}}\n"
+
+            language_preamble += (
+                "\\providecommand{\\keywords}[1]{\\par\\noindent\\textbf{Keywords:} #1}\n"
+            )
+            if article_style != "ieee":
+                language_preamble += "\\addbibresource{references/references.bib}\n"
+
+            abstract = (
+                "چکیده را در یک پاراگراف بنویسید: مسئله، روش و نتیجه اصلی.\n"
+                if code == "fa" else
+                "State the problem, approach, and main finding in one concise paragraph.\n"
+            )
+            keyword_text = "کلیدواژه اول؛ کلیدواژه دوم؛ کلیدواژه سوم" if code == "fa" else "keyword one; keyword two; keyword three"
+            intro_title = "مقدمه" if code == "fa" else "Introduction"
+            intro_text = "زمینه، مسئله و سهم این نوشته را معرفی کنید." if code == "fa" else "Introduce the context, problem, and contribution of this paper."
+            approach_title = "روش" if code == "fa" else "Approach"
+            approach_text = "روش، استدلال یا رویکرد خود را توضیح دهید." if code == "fa" else "Describe the method, argument, or approach."
+            conclusion_title = "نتیجه‌گیری" if code == "fa" else "Conclusion"
+            conclusion_text = "یافته‌ها و محدودیت‌های اصلی را جمع‌بندی کنید." if code == "fa" else "Summarize the main findings and limitations."
+            generated[directory / "sections" / "01-introduction.tex"] = f"\\section{{{intro_title}}}\n{intro_text}\n"
+            generated[directory / "sections" / "02-approach.tex"] = f"\\section{{{approach_title}}}\n{approach_text}\n"
+            generated[directory / "sections" / "03-conclusion.tex"] = f"\\section{{{conclusion_title}}}\n{conclusion_text}\n"
+
+            if article_style == "ieee":
+                bibliography = "\\bibliographystyle{IEEEtran}\n\\bibliography{references/references}\n"
+            else:
+                bibliography = "\\printbibliography\n"
+            generated[directory / "main.tex"] = (
+                document_class + language_preamble +
+                "\\title{" + doc_title + "}\n"
+                "\\author{" + author + "}\n"
+                "\\date{\\today}\n"
+                "\\begin{document}\n"
+                "\\maketitle\n"
+                "\\begin{abstract}\n" + abstract + "\\end{abstract}\n"
+                "\\keywords{" + keyword_text + "}\n"
+                "\\input{sections/01-introduction}\n"
+                "\\input{sections/02-approach}\n"
+                "\\input{sections/03-conclusion}\n"
+                + bibliography + "\\end{document}\n"
+            )
+
         else:
             directories.add(directory / "sections")
-            body_path = Path("sections/01-introduction.tex")
-            section_name = "معرفی" if code == "fa" and kind == "cv" else ("مقدمه" if code == "fa" else ("Profile" if kind == "cv" else "Introduction"))
-            sample = "اطلاعات خود را اینجا اضافه کنید." if code == "fa" else ("Add your profile details here." if kind == "cv" else "A clean starting point for your document.")
-            body = "\\section{" + section_name + "}\n" + sample + "\n"
-            if is_booklet:
-                structure = "\\maketitle\n\\tableofcontents\n\\input{sections/01-introduction}\n"
-            elif kind == "cv":
-                structure = "\\maketitle\n\\input{sections/01-introduction}\n"
-            else:
-                structure = "\\maketitle\n\\input{sections/01-introduction}\n"
-            document_class = "\\documentclass[11pt]{article}\n"
+            section_name = "معرفی" if code == "fa" else "Profile"
+            sample = "اطلاعات خود را اینجا اضافه کنید." if code == "fa" else "Add your profile details here."
+            generated[directory / "sections" / "01-profile.tex"] = f"\\section{{{section_name}}}\n{sample}\n"
+            language_preamble = (
+                "\\usepackage{graphicx}\n\\usepackage{hyperref}\n"
+                if code == "en" else
+                "\\usepackage{graphicx}\n\\usepackage{hyperref}\n\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n"
+            )
+            generated[directory / "main.tex"] = (
+                "\\documentclass[11pt]{article}\n" + language_preamble +
+                "\\title{" + doc_title + "}\n"
+                "\\author{" + author + "}\n"
+                "\\begin{document}\n\\maketitle\n"
+                "\\input{sections/01-profile}\n\\end{document}\n"
+            )
 
-        if code == "fa":
-            preamble = "\\usepackage{graphicx}\n\\usepackage{hyperref}\n\\usepackage{xepersian}\n\\settextfont{Vazirmatn}\n"
-            doc_title = "عنوان نمونه"
-            author = "نام نویسنده"
-        else:
-            preamble = "\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n"
-            doc_title = title
-            author = "Your Name"
-
-        main = (
-            document_class + preamble +
-            "\\title{" + doc_title + "}\n\\author{" + author + "}\n" +
-            "\\begin{document}\n" + structure + "\\end{document}\n"
-        )
         main_path = directory / "main.tex"
-        body_file = directory / body_path
-        generated[main_path] = main
-        generated[body_file] = body
         entries[code] = {
             "source": str(main_path.relative_to(root)).replace("\\", "/"),
             "engine": "xelatex" if code == "fa" else "pdflatex",
@@ -162,6 +318,7 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
                 "first-article": {
                     "type": "article",
                     "title": title,
+                    "style": article_style,
                     "editions": entries,
                 }
             },
@@ -193,6 +350,9 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
                 "tag_limit": 5,
             },
         }
+        if kind == "article":
+            cfg["project"]["style"] = article_style
+
     config_path.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False), encoding="utf-8")
     makefile = root / "Makefile"
     if not makefile.exists():
@@ -214,7 +374,7 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root).expanduser().resolve()
     try:
         if args.command == "init":
-            path = _init(root, args.type, args.language, args.force)
+            path = _init(root, args.type, args.language, args.force, args.style)
             log("info", f"Created {path}", component="init", status="ok")
             return 0
         if args.command == "log":

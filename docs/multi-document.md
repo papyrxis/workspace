@@ -33,6 +33,7 @@ documents:
   paper-01:
     type: article
     title: First Paper
+    style: academic
     editions:
       en:
         source: papers/first/en.tex
@@ -62,7 +63,7 @@ export:
   tag_limit: 5
 ~~~
 
-The root project type may be `collection` in schema v2. Each document must use one of the supported concrete profiles: `book`, `booklet`, `article`, or `cv`. `project.languages` declares the editions used by the collection; each edition ID must be a safe identifier.
+The root project type may be `collection` in schema v2. Each document must declare one of the supported concrete profiles: `book`, `booklet`, `article`, or `cv`. Article documents may set `style` to `personal`, `academic`, `ieee`, or `technical`; it is optional for hand-written configurations and defaults to `personal` when created with `px init`. `project.languages` declares the editions used by the collection; each edition ID must be a safe identifier.
 
 ## CLI
 

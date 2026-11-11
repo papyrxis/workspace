@@ -14,6 +14,7 @@ class SharedTeXResourceTests(unittest.TestCase):
         self.assertTrue((shared / "components" / "paper-styles.tex").is_file())
         self.assertTrue((shared / "presets" / "book" / "technical.tex").is_file())
         self.assertTrue((shared / "presets" / "article" / "academic.tex").is_file())
+        self.assertTrue((shared / "presets" / "article" / "personal.tex").is_file())
         self.assertTrue((shared / "packages" / "fonts.tex").is_file())
 
     def test_project_overrides_precede_shared_components(self):
@@ -24,8 +25,9 @@ class SharedTeXResourceTests(unittest.TestCase):
             self.assertTrue(paths[0].startswith(str(source.parent)))
             self.assertTrue(paths[1].startswith(str(root / "tex")))
             self.assertTrue(paths[2].startswith(str(root / "configs")))
-            self.assertTrue(paths[3].startswith(str(common_root())))
-            self.assertTrue(paths[4].startswith(str(common_root() / "components")))
+            self.assertTrue(paths[3].startswith(str(common_root().parent)))
+            self.assertTrue(paths[4].startswith(str(common_root())))
+            self.assertTrue(paths[5].startswith(str(common_root() / "components")))
 
 
 if __name__ == "__main__":

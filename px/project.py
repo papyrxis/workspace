@@ -54,13 +54,14 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
     output_root = _inside(base, output_relative, "build.output_dir")
     if output_root == base:
         raise BuildError("build.output_dir cannot be the project root")
+    _assert_output_does_not_contain_sources(base, output_root, config)
     documents = _documents(config)
     if document_id and document_id not in documents:
         raise BuildError(f"unknown document {document_id!r}; run px list")
     requested_editions = {edition} if isinstance(edition, str) else set(edition or [])
     seen_editions: set[str] = set()
     plan: list[dict[str, Any]] = []
-    destinations: set[Path] = set()
+    destinations: dict[str, Path] = {}
     for doc_id, document in documents.items():
         if document_id and doc_id != document_id:
             continue
@@ -94,9 +95,13 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             _reject_symlink_components(base, output_relative, f"{doc_id}/{edition_id}.output")
             output_dir = _inside(base, output_relative.as_posix(), f"{doc_id}/{edition_id}.output")
             destination = output_dir / f"{output_name}.pdf"
-            if destination in destinations:
-                raise BuildError(f"output collision: multiple editions target {destination.relative_to(base)}")
-            destinations.add(destination)
+            portable_key = destination.relative_to(base).as_posix().casefold()
+            if portable_key in destinations:
+                raise BuildError(
+                    f"output collision: {destination.relative_to(base)} conflicts with "
+                    f"{destinations[portable_key].relative_to(base)} on a case-insensitive filesystem"
+                )
+            destinations[portable_key] = destination
             plan.append({
                 "document_id": doc_id, "document_type": document.get("type", config["project"]["type"]),
                 "title": document.get("title", doc_id), "edition": edition_id,
@@ -109,6 +114,24 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
     if not plan:
         raise BuildError("no documents or editions selected")
     return plan
+
+
+def _assert_output_does_not_contain_sources(root: Path, output_root: Path, config: dict[str, Any]) -> None:
+    """Keep generated-output cleanup from removing configured source files."""
+    for document_id, document in _documents(config).items():
+        for edition_id, raw in document.get("editions", {}).items():
+            source_value = raw if isinstance(raw, str) else raw.get("source")
+            if not isinstance(source_value, str):
+                continue
+            source = _inside(root, source_value, f"{document_id}/{edition_id}.source")
+            try:
+                source.relative_to(output_root)
+            except ValueError:
+                continue
+            raise BuildError(
+                f"build.output_dir contains a configured source file ({document_id}/{edition_id}: "
+                f"{source.relative_to(root).as_posix()}); choose a dedicated generated-output directory"
+            )
 
 
 def _sha256(path: Path) -> str:
@@ -326,6 +349,7 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
     target = _inside(base, target_relative.as_posix(), "clean target")
     if target == base or target == output_root:
         raise BuildError("refusing to clean project root or shared build directory")
+    _assert_output_does_not_contain_sources(base, output_root, config)
     manifest_path = output_root / "manifest.json"
     manifest = None
     if manifest_path.is_symlink():

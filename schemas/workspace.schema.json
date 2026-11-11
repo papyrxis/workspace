@@ -14,6 +14,7 @@
         "title": {"type": "string"},
         "author": {"type": "string"},
         "languages": {"type": "array", "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"}, "minItems": 1},
+        "style": {"enum": ["personal", "academic", "ieee", "technical"]},
         "tags": {"type": "array", "items": {"type": "string"}},
         "keywords": {"type": "array", "items": {"type": "string"}}
       },
@@ -43,6 +44,7 @@
         "properties": {
           "type": {"enum": ["book", "booklet", "article", "cv"]},
           "title": {"type": "string"},
+          "style": {"enum": ["personal", "academic", "ieee", "technical"]},
           "editions": {
             "type": "object",
             "minProperties": 1,
@@ -58,7 +60,7 @@
             }
           }
         },
-        "required": ["editions"],
+        "required": ["type", "editions"],
         "additionalProperties": true
       }
     },
