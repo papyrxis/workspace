@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile targets for building, cleaning, watching, versioning, and generating document sections.
 - LaTeX templates, frontmatter support, logging, and initial project examples.
 
-[Unreleased]: https://github.com/papyrxis/workspace/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/papyrxis/workspace/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/papyrxis/workspace/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/papyrxis/workspace/releases/tag/v0.4.0
 [0.1.0]: https://github.com/papyrxis/workspace/releases/tag/v0.1.0
