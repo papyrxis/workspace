@@ -53,7 +53,7 @@ class CollectionInitTests(unittest.TestCase):
                 if kind == "book":
                     self.assertIn(r"\include{parts/part-01}", source)
                     part = (root / "parts/part-01.tex").read_text(encoding="utf-8")
-                    self.assertIn(r"\include{chapters/chapter-01}", part)
+                    self.assertIn(r"\input{chapters/chapter-01}", part)
                     self.assertIn(r"\printindex", source)
                     self.assertTrue((root / "backmatter/appendix.tex").is_file())
                 else:

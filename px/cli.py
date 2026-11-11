@@ -136,7 +136,7 @@ def _init(root: Path, kind: str, language: str, force: bool, style: str | None =
                 )
                 generated[directory / "parts" / "part-01.tex"] = (
                     "\\part{Part I}\n"
-                    "\\include{chapters/chapter-01}\n"
+                    "\\input{chapters/chapter-01}\n"
                 )
                 generated[directory / "frontmatter" / "preface.tex"] = (
                     "\\chapter*{پیشگفتار}\n\\addcontentsline{toc}{chapter}{پیشگفتار}\n"
