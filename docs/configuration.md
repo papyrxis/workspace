@@ -47,6 +47,7 @@ targets:
 - type is book, booklet, article or cv.
 - title and author are document metadata.
 - languages lists the editions to build.
+- for an `article`, optional `style` selects `personal`, `academic`, `ieee` or `technical`; `px init --type article` defaults to `personal`.
 - tags and keywords supply platform tag generation.
 
 ## Build
@@ -72,7 +73,7 @@ entries:
     engine: xelatex
 ~~~
 
-Each edition is built independently under build/<language>/.
+Each edition is built independently under `build/<language>/`. `px init --type book` creates chapter/part, front-matter and appendix scaffolding; `--type booklet` creates a compact A5 book profile.
 
 ## Export and targets
 
