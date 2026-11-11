@@ -42,12 +42,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=log-build /opt/mmlog/lib/ /opt/mmlog/lib/
+
+# Keep Python dependency resolution independent from application source changes.
+COPY .ci/locks/docker-python.lock /tmp/docker-python.lock
+RUN python -m pip install --no-cache-dir -r /tmp/docker-python.lock
+
 WORKDIR /opt/workspace
 COPY pyproject.toml README.md ./
 COPY px ./px
 COPY common ./common
 COPY examples ./examples
-RUN python -m pip install --no-cache-dir .
+RUN python -m pip install --no-cache-dir --no-deps --no-build-isolation .
 
 RUN useradd --create-home --uid 10001 px \
     && mkdir -p /workspace \

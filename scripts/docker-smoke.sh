@@ -2,7 +2,19 @@
 set -euo pipefail
 
 image="${1:-papyrxis-workspace:smoke}"
-docker build --pull -t "$image" .
+build_image=true
+
+if [[ "${2:-}" == "--no-build" ]]; then
+  build_image=false
+elif [[ $# -gt 1 ]]; then
+  echo "Usage: $0 [image] [--no-build]" >&2
+  exit 2
+fi
+
+if [[ "$build_image" == true ]]; then
+  docker build --pull -t "$image" .
+fi
+
 docker run --rm "$image" --help >/dev/null
 docker run --rm --entrypoint px "$image" --root /opt/workspace/examples/multi-document list --json >/dev/null
 docker run --rm --entrypoint python "$image" -c "from px.logger import native_logger_available; assert native_logger_available(), 'native log.c library is not loaded'"

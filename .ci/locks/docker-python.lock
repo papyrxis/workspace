@@ -1,0 +1,6 @@
+# Runtime build dependencies for the Workspace OCI image.
+# The BuildKit cache namespace is derived from this file's SHA-256.
+# Keep PyYAML aligned with pyproject.toml and the publishing lock used by consumers.
+PyYAML==6.0.3
+setuptools==80.9.0
+wheel==0.45.1
