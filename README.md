@@ -27,21 +27,17 @@ Actual books and articles stay in their own repositories. Personal CVs should be
 
 ## Start a project
 
+Download the wheel from the [Workspace v0.5.0 release](https://github.com/papyrxis/workspace/releases/tag/v0.5.0), then install it in the project's Python environment:
+
 ~~~sh
-python -m pip install -e /path/to/workspace
+python -m pip install ./papyrxis_workspace-0.5.0-py3-none-any.whl
 mkdir my-book && cd my-book
 px init --type book --language en
 # or create a multi-document collection:
 px init --type collection --language both
 ~~~
 
-Or use Workspace as a Git submodule:
-
-~~~sh
-git submodule add https://github.com/papyrxis/workspace.git workspace
-python -m pip install -e workspace
-px init --type book --language en
-~~~
+Consumer repositories install the published package; they do not need to clone Workspace or add it as a Git submodule. For Workspace development, clone this repository and use `python -m pip install -e ".[test]"`.
 
 Build with:
 
