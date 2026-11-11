@@ -59,6 +59,7 @@
               "required": ["source"],
               "properties": {
                 "source": {"type": "string"},
+                "working_directory": {"type": "string"},
                 "engine": {"enum": ["pdflatex", "xelatex", "lualatex"]},
                 "output_name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"}
               },

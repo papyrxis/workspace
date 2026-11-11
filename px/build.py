@@ -81,41 +81,11 @@ def build_project(root: str | Path, config: dict[str, Any], languages: Iterable[
     return results
 
 
-def _assert_output_does_not_contain_sources(root: Path, output: Path, config: dict[str, Any]) -> None:
-    """Reject cleanup roots that contain any configured LaTeX entrypoint."""
-    if config.get("schema_version") == 1:
-        entries = config["build"]["entries"].items()
-        sources = (
-            raw if isinstance(raw, str) else raw.get("source", "")
-            for _, raw in entries
-        )
-    else:
-        documents = config.get("documents", {})
-        sources = (
-            edition.get("source", "")
-            for document in documents.values()
-            for edition in document.get("editions", {}).values()
-        )
-    for value in sources:
-        if not isinstance(value, str) or not value:
-            continue
-        source = _inside(root, value, "configured source")
-        try:
-            source.relative_to(output)
-        except ValueError:
-            continue
-        raise BuildError(
-            f"build.output_dir contains a configured source file ({source.relative_to(root).as_posix()}); "
-            "choose a dedicated generated-output directory"
-        )
-
-
 def clean_project(root: str | Path, config: dict[str, Any]) -> int:
     base = Path(root).expanduser().resolve()
     output = _inside(base, config["build"]["output_dir"], "build.output_dir")
     if output == base:
         raise BuildError("refusing to clean the project root")
-    _assert_output_does_not_contain_sources(base, output, config)
     if not output.exists():
         return 0
     import shutil

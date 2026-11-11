@@ -81,6 +81,20 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             source = _inside(base, raw["source"], f"{doc_id}/{edition_id}.source")
             if not source.is_file():
                 raise BuildError(f"{doc_id}/{edition_id}: source file does not exist: {source}")
+            working_directory = _inside(
+                base, raw.get("working_directory", "."),
+                f"{doc_id}/{edition_id}.working_directory"
+            )
+            _reject_symlink_components(
+                base,
+                raw.get("working_directory", "."),
+                f"{doc_id}/{edition_id}.working_directory"
+            )
+            if not working_directory.is_dir():
+                raise BuildError(
+                    f"{doc_id}/{edition_id}: working_directory does not exist or is not a directory: "
+                    f"{working_directory}"
+                )
             engine = raw.get("engine", config["build"].get("default_engine", "xelatex"))
             if engine not in _ENGINES:
                 raise BuildError(f"{doc_id}/{edition_id}: unsupported LaTeX engine {engine!r}")
@@ -105,8 +119,8 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             plan.append({
                 "document_id": doc_id, "document_type": document.get("type", config["project"]["type"]),
                 "title": document.get("title", doc_id), "edition": edition_id,
-                "source": source, "engine": engine, "output_dir": output_dir,
-                "output": destination,
+                "source": source, "engine": engine, "working_directory": working_directory,
+                "output_dir": output_dir, "output": destination,
             })
     missing_editions = requested_editions - seen_editions
     if missing_editions:
@@ -196,6 +210,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
         record = {k: item[k] for k in ("document_id", "document_type", "title", "edition", "engine")}
         record.update(source=item["source"].relative_to(base).as_posix(),
                       source_sha256=_sha256(item["source"]),
+                      working_directory=item["working_directory"].relative_to(base).as_posix(),
                       output=item["output"].relative_to(base).as_posix(), status="planned")
         if dry_run:
             records.append(record)
@@ -204,7 +219,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
         try:
             item["output_dir"].mkdir(parents=True, exist_ok=True)
             env = {"TEXINPUTS": tex_inputs(base, item["source"])}
-            run_checked(command, cwd=base, env=env,
+            run_checked(command, cwd=item["working_directory"], env=env,
                         timeout=int(config["build"].get("timeout_seconds", 1800)))
             if not valid_pdf(item["output"]):
                 raise BuildError(f"{key}: compiler completed but PDF is missing or invalid")

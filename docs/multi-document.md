@@ -54,6 +54,7 @@ documents:
     editions:
       en:
         source: books/volume-01.tex
+        working_directory: books
         engine: pdflatex
         output_name: volume-01
 
@@ -103,6 +104,8 @@ build/
 │   └── en/volume-01.pdf
 └── manifest.json
 ~~~
+
+An edition's optional `working_directory` is relative to the project root and controls the process directory used by the TeX engine. It is useful when a nested entry point uses relative `\\input`, bibliography or figure paths. It defaults to the project root for backward compatibility; it must exist and stay inside the project.
 
 The shared Workspace components, document presets and package snippets are included in the installable wheel; the project source directory and project `tex/`/`configs/` overrides are searched before shared resources. The manifest is written atomically and has a stable ordering. Successful result records contain document ID/type/title, edition, source, selected engine, output path, byte size, and SHA-256. Failed editions contain a failure status and diagnostic message. The summary records planned/completed/failed counts and whether the command was a dry run.
 

@@ -68,6 +68,43 @@ documents:
             targets = [x["output"] for x in plan if x["document_id"] in {"paper-a", "paper-b"}]
             self.assertEqual(len(set(targets)), 2)
 
+    def test_edition_working_directory_is_resolved_and_passed_to_compiler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            config["documents"]["paper-a"]["editions"]["en"]["working_directory"] = "papers"
+            plan = plan_documents(root, config, "paper-a", "en")
+            self.assertEqual(plan[0]["working_directory"], root / "papers")
+
+            observed = {}
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                observed["cwd"] = Path(cwd)
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\\nfixture\\n%%EOF\\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, "paper-a", "en")
+            self.assertEqual(observed["cwd"], root / "papers")
+            import json
+            manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["results"][0]["working_directory"], "papers")
+
+    def test_working_directory_must_stay_inside_project_and_exist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            edition = config["documents"]["paper-a"]["editions"]["en"]
+            edition["working_directory"] = "../outside"
+            with self.assertRaises(ConfigError):
+                from px.config import validate_config
+                validate_config(config)
+            edition["working_directory"] = "missing"
+            with self.assertRaises(BuildError):
+                plan_documents(root, config, "paper-a", "en")
+
     def test_document_and_edition_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

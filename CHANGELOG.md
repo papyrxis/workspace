@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Article initialization profiles (`personal`, `academic`, `ieee`, and `technical`) with abstract, keywords, sections, and bibliography scaffolding.
-- Complete book and compact booklet starter structures with front matter, chapters, and back matter.
-
-### Fixed
-- Prevent cleanup from removing configured LaTeX source files and detect case-insensitive artifact path collisions before compilation.
-
 ## [0.4.0] - 2026-11-11
 
 ### Added

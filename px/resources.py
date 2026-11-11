@@ -28,7 +28,6 @@ def tex_inputs(project_root: str | Path, source: str | Path) -> str:
         source_path.parent,
         root / "tex",
         root / "configs",
-        shared.parent,
         shared,
         shared / "components",
         shared / "presets",
