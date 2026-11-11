@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Prevent cleanup from removing configured LaTeX source files and detect case-insensitive artifact path collisions before compilation.
 - Preserve sibling edition artifacts when cleaning one edition.
+- Resolve project-root-relative TeX includes when an edition compiles from a nested working directory.
 
 ## [0.4.0] - 2026-11-11
 
