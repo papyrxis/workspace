@@ -1,9 +1,8 @@
-"""Shared subprocess boundaries with legacy and strict APIs."""
+"Shared subprocess boundaries with legacy and strict APIs."
 from __future__ import annotations
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Mapping, Sequence
 
@@ -50,7 +49,7 @@ def run_quiet(
     result = subprocess.run(
         list(cmd), cwd=cwd, env=_environment(env),
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, check=False,
+        text=True, encoding="utf-8", errors="replace", check=False,
     )
     return result.returncode, result.stdout, result.stderr
 
@@ -62,13 +61,19 @@ def run_checked(
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Strict API for new workspace code: text output and typed failures."""
+    """Run a command with stable UTF-8 text decoding for arbitrary tool output.
+
+    TeX engines and other native tools may emit bytes that are not valid UTF-8
+    even when the source document is UTF-8. Preserve readable diagnostics while
+    replacing undecodable bytes instead of aborting the Python build itself.
+    """
     if not command or not all(isinstance(item, str) for item in command):
         raise ValueError("command must be a non-empty sequence of strings")
     try:
         result = subprocess.run(
             list(command), cwd=Path(cwd), env=_environment(env),
-            text=True, capture_output=True, check=False, timeout=timeout,
+            text=True, encoding="utf-8", errors="replace",
+            capture_output=True, check=False, timeout=timeout,
         )
     except FileNotFoundError as exc:
         raise CommandError(command, 127, str(exc)) from exc
