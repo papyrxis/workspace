@@ -47,16 +47,17 @@ class CollectionInitTests(unittest.TestCase):
                 self.assertEqual(config["project"]["type"], kind)
                 source = (root / "main.tex").read_text(encoding="utf-8")
                 self.assertIn(r"\frontmatter", source)
-                self.assertIn(r"\include{chapters/chapter-01}", source)
                 self.assertTrue((root / "chapters/chapter-01.tex").is_file())
                 self.assertTrue((root / "frontmatter/preface.tex").is_file())
                 self.assertTrue((root / "references/references.bib").is_file())
                 if kind == "book":
                     self.assertIn(r"\include{parts/part-01}", source)
+                    part = (root / "parts/part-01.tex").read_text(encoding="utf-8")
+                    self.assertIn(r"\include{chapters/chapter-01}", part)
                     self.assertIn(r"\printindex", source)
-                    self.assertTrue((root / "parts/part-01.tex").is_file())
                     self.assertTrue((root / "backmatter/appendix.tex").is_file())
                 else:
+                    self.assertIn(r"\include{chapters/chapter-01}", source)
                     self.assertIn(r"\geometry{a5paper", source)
                     self.assertTrue((root / "backmatter/notes.tex").is_file())
 
