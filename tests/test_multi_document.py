@@ -276,6 +276,21 @@ build:
             with self.assertRaises(ConfigError):
                 load_config(root)
 
+    def test_article_style_is_rejected_for_non_article_documents(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._project(root)
+            path = root / "workspace.yml"
+            source = path.read_text(encoding="utf-8")
+            source = source.replace(
+                "  handbook:\n    type: book\n",
+                "  handbook:\n    type: book\n    style: ieee\n",
+                1,
+            )
+            path.write_text(source, encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                load_config(root)
+
 
 if __name__ == "__main__":
     unittest.main()
