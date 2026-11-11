@@ -51,6 +51,7 @@ jobs:
           load: true
           tags: papyrxis-workspace:smoke
           cache-from: |
+            type=gha,scope=buildkit
             type=gha,scope=workspace-publish-${{ steps.cache.outputs.key }}
             type=gha,scope=workspace-smoke-${{ steps.cache.outputs.key }}
           cache-to: type=gha,scope=workspace-smoke-${{ steps.cache.outputs.key }},mode=max
@@ -109,6 +110,7 @@ jobs:
             ${{ steps.dockerhub.outputs.tags }}
           labels: ${{ steps.ghcr.outputs.labels }}
           cache-from: |
+            type=gha,scope=buildkit
             type=gha,scope=workspace-publish-${{ steps.cache.outputs.key }}
             type=gha,scope=workspace-smoke-${{ steps.cache.outputs.key }}
           cache-to: type=gha,scope=workspace-publish-${{ steps.cache.outputs.key }},mode=max
