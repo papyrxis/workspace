@@ -228,10 +228,53 @@ build:
                 build_documents(root, config, keep_going=True)
             from px.project import clean_document
             clean_document(root, config, "handbook")
+            self.assertTrue((root / "books/en.tex").is_file())
             remaining = list_documents(root, config)
             self.assertFalse(any(row["document_id"] == "handbook" and row["status"] == "success" for row in remaining))
             with self.assertRaises(BuildError):
                 verify_manifest(root, config)
+
+    def test_case_insensitive_artifact_collisions_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            first = config["documents"].pop("paper-a")
+            second = config["documents"].pop("paper-b")
+            first["editions"]["en"]["output_name"] = "shared"
+            second["editions"]["en"]["output_name"] = "shared"
+            config["documents"] = {"Paper": first, "paper": second}
+            with self.assertRaisesRegex(BuildError, "case-insensitive filesystem"):
+                plan_documents(root, config)
+
+    def test_build_output_must_not_contain_configured_sources(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            config["build"]["output_dir"] = "papers"
+            with self.assertRaisesRegex(BuildError, "contains a configured source file"):
+                plan_documents(root, config)
+
+    def test_clean_refuses_to_remove_source_directories(self):
+        from px.build import clean_project
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            config["build"]["output_dir"] = "papers"
+            with self.assertRaisesRegex(BuildError, "contains a configured source file"):
+                clean_project(root, config)
+            self.assertTrue((root / "papers/a.tex").is_file())
+
+    def test_v2_documents_require_an_explicit_document_type(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._project(root)
+            path = root / "workspace.yml"
+            source = path.read_text(encoding="utf-8")
+            source = source.replace("    type: article\n", "", 1)
+            path.write_text(source, encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                load_config(root)
 
 
 if __name__ == "__main__":

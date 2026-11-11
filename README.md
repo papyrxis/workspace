@@ -105,7 +105,8 @@ See docs/configuration.md and schemas/workspace.schema.json.
 ## Common commands
 
 ~~~sh
-px init --type article --language both
+px init --type article --style academic --language both
+px init --type article --style ieee
 px build --language en
 px build --language fa
 px export --target devto

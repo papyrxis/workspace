@@ -10,6 +10,7 @@ import yaml
 
 ENGINES = {"pdflatex", "xelatex", "lualatex"}
 PROJECT_TYPES = {"book", "booklet", "article", "cv", "collection"}
+ARTICLE_STYLES = {"personal", "academic", "ieee", "technical"}
 _TARGET_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _LANGUAGE_CODE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
@@ -67,7 +68,8 @@ def validate_config(config: Mapping[str, Any]) -> None:
     project, build, export = config.get("project"), config.get("build"), config.get("export")
     if not all(isinstance(value, Mapping) for value in (project, build, export)):
         raise ConfigError("project, build and export must be YAML mappings")
-    if project.get("type") not in (PROJECT_TYPES if version == 2 else PROJECT_TYPES - {"collection"}):
+    allowed_project_types = PROJECT_TYPES if version == 2 else PROJECT_TYPES - {"collection"}
+    if not isinstance(project.get("type"), str) or project.get("type") not in allowed_project_types:
         raise ConfigError(f"project.type must be one of: {', '.join(sorted(PROJECT_TYPES))}")
     languages = project.get("languages")
     if not isinstance(languages, list) or not languages or not all(
@@ -81,6 +83,14 @@ def validate_config(config: Mapping[str, Any]) -> None:
     timeout = build.get("timeout_seconds", 1800)
     if type(timeout) is not int or timeout < 1:
         raise ConfigError("build.timeout_seconds must be a positive integer")
+
+    project_style = project.get("style")
+    if project_style is not None and (
+        project.get("type") != "article" or not isinstance(project_style, str) or project_style not in ARTICLE_STYLES
+    ):
+        raise ConfigError(
+            f"project.style is only valid for articles and must be one of: {', '.join(sorted(ARTICLE_STYLES))}"
+        )
 
     if version == 1:
         entries = build.get("entries")
@@ -104,8 +114,18 @@ def validate_config(config: Mapping[str, Any]) -> None:
                 raise ConfigError(f"invalid document id: {document_id!r}")
             if not isinstance(document, Mapping):
                 raise ConfigError(f"documents.{document_id} must be a mapping")
-            if document.get("type", project["type"]) not in (PROJECT_TYPES - {"collection"}):
-                raise ConfigError(f"documents.{document_id}.type is invalid")
+            document_type = document.get("type")
+            if not isinstance(document_type, str) or document_type not in (PROJECT_TYPES - {"collection"}):
+                raise ConfigError(
+                    f"documents.{document_id}.type must be one of: {', '.join(sorted(PROJECT_TYPES - {'collection'}))}"
+                )
+            style = document.get("style")
+            if style is not None and (
+                document_type != "article" or not isinstance(style, str) or style not in ARTICLE_STYLES
+            ):
+                raise ConfigError(
+                    f"documents.{document_id}.style is only valid for articles and must be one of: {', '.join(sorted(ARTICLE_STYLES))}"
+                )
             editions = document.get("editions")
             if not isinstance(editions, Mapping) or not editions:
                 raise ConfigError(f"documents.{document_id}.editions must be a non-empty mapping")
