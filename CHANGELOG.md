@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Schema-v2 multi-document projects with independently configured language editions.
+- Deterministic build manifests with artifact size and SHA-256 verification.
+- Downloadable wheel/sdist release bundle with a self-verifying package manifest.
+- Multi-platform Docker images published to GHCR and optionally Docker Hub.
+
+### Changed
+- Preserve schema-v1 projects and their historical build output layout.
+
+
+### Added
 - `px/` — the Python engine previously living as `scripts/common/` inside the
   `papers` repo, promoted into `workspace` so every consumer shares one
   implementation instead of N copies: `BaseModule` (banner/interactive

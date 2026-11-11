@@ -31,6 +31,8 @@ Actual books and articles stay in their own repositories. Personal CVs should be
 python -m pip install -e /path/to/workspace
 mkdir my-book && cd my-book
 px init --type book --language en
+# or create a multi-document collection:
+px init --type collection --language both
 ~~~
 
 Or use Workspace as a Git submodule:
@@ -123,8 +125,36 @@ Equivalent Make targets are documented in docs/scripts.md.
 - .gix/config defines branch flow. Use gix feature start and gix feature finish.
 - The shared logger is m-mdy-m/log.c; Workspace calls its stable C ABI through ctypes. A simple stderr fallback is used during bootstrap if the shared library is not installed.
 
-Read docs/architecture.md, docs/getting-started.md, docs/configuration.md, docs/build-and-export.md and docs/releasing.md.
+Read docs/architecture.md, docs/getting-started.md, docs/configuration.md, docs/build-and-export.md, docs/multi-document.md, docs/logging.md and docs/releasing.md.
 
 ## License
 
 Workspace tooling is MIT-licensed. Document contents created with Workspace retain the license chosen by each publishing project. Third-party fonts, LaTeX packages, CSL files and templates retain their respective licenses.
+
+## Multi-document publishing (schema v2)
+
+Schema v1 remains supported for existing single-document projects. For a repository containing independent papers, booklets or volumes, use schema v2 with named documents and editions:
+
+~~~sh
+cd examples/multi-document
+px list
+px build
+px build bilingual-handbook --edition fa
+px verify
+px clean arliz-volume-2
+~~~
+
+Outputs are isolated under `build/<document-id>/<edition>/`; `build/manifest.json` records every successful artifact and its SHA-256. See [the multi-document guide](docs/multi-document.md), the runnable [single-article fixture](examples/single-article/README.md), and the [multi-document fixture](examples/multi-document/README.md).
+
+## Release assets and containers
+
+Push a SemVer tag (including prerelease tags such as `v0.3.0-beta.1`) to invoke the shared `m-mdy-m/pipeline` release workflow. It tests the package, builds wheel and sdist distributions, creates a deterministic self-verifying ZIP bundle, and attaches all files plus checksums to the GitHub Release, and signs the assets with keyless Sigstore signatures plus GitHub provenance attestations. Prerelease tags are published as GitHub prereleases by Pipeline.
+
+The installable Python distribution bundle is published as a GHCR OCI package at `ghcr.io/papyrxis/papyrxis-workspace`; the Docker image is published separately as `ghcr.io/papyrxis/workspace`. Configure repository Actions secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to additionally publish to Docker Hub as `<username>/papyrxis-workspace`. See [release documentation](docs/releasing.md).
+
+~~~sh
+docker pull ghcr.io/papyrxis/workspace:latest
+docker run --rm ghcr.io/papyrxis/workspace:latest --help
+# Mount a project to build it:
+docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/papyrxis/workspace:latest build
+~~~

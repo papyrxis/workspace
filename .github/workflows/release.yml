@@ -1,0 +1,44 @@
+name: Workspace Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Build and validate release assets without publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    uses: m-mdy-m/pipeline/.github/workflows/release.yml@main
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    with:
+      pipeline-ref: main
+      test-command: >-
+        python -m pip install -e ".[test]" &&
+        python -m compileall -q px scripts &&
+        python -m unittest discover -s tests -p "test_*.py" -v
+      build-command: >-
+        python scripts/set_release_version.py &&
+        python -m pip install --upgrade build twine &&
+        python -m build --sdist --wheel --outdir dist &&
+        python -m twine check dist/*.whl dist/*.tar.gz &&
+        python scripts/package_release.py --input dist --output dist/papyrxis-workspace-release.zip
+      artifact-path: dist/*
+      artifact-test-command: >-
+        python scripts/test_release_install.py --bundle "$PIPELINE_ARTIFACT_TEST_DIR/papyrxis-workspace-release.zip"
+      changelog-path: CHANGELOG.md
+      asset-profile: gitea
+      sign-assets: true
+      attest-release: true
+      dry-run: ${{ inputs.dry-run || false }}

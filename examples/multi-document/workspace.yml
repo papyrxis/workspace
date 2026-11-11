@@ -1,0 +1,68 @@
+schema_version: 2
+
+project:
+  name: papyrxis-demo-library
+  type: collection
+  title: Papyrxis Demo Library
+  author: Papyrxis
+  languages: [en, fa]
+
+build:
+  output_dir: build
+  default_engine: xelatex
+  timeout_seconds: 1800
+
+documents:
+  research-note:
+    type: article
+    title: A Small Research Note
+    editions:
+      en:
+        source: papers/research-note/en.tex
+        engine: pdflatex
+  second-paper:
+    type: article
+    title: A Companion Research Note
+    editions:
+      en:
+        source: papers/research-note/companion.tex
+        engine: pdflatex
+  bilingual-handbook:
+    type: booklet
+    title: Publishing with Workspace
+    editions:
+      en:
+        source: booklets/handbook/en.tex
+        engine: pdflatex
+      fa:
+        source: booklets/handbook/fa.tex
+        engine: xelatex
+  arliz-volume-1:
+    type: book
+    title: Zero to Bit
+    editions:
+      en:
+        source: books/volume-1.tex
+        engine: pdflatex
+        output_name: zero-to-bit
+  arliz-volume-2:
+    type: book
+    title: Silicon Horizon
+    editions:
+      en:
+        source: books/volume-2.tex
+        engine: pdflatex
+        output_name: silicon-horizon
+  arliz-volume-3:
+    type: book
+    title: Array Odyssey
+    editions:
+      en:
+        source: books/volume-3.tex
+        engine: pdflatex
+        output_name: array-odyssey
+
+export:
+  output_dir: build/export
+  targets: [devto]
+  tag_limit: 5

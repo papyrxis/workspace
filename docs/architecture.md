@@ -43,3 +43,13 @@ px.logger binds the stable non-variadic mmlog_event_t interface from m-mdy-m/log
 ## Extension rule
 
 A helper shared by more than one command belongs in px/ exactly once. Make targets and provider workflows are entry points, not alternate implementations of YAML parsing, LaTeX compilation, export, tags or release notes.
+
+## Multi-document projects (schema v2)
+
+Schema v1 remains the default and is normalized into one logical document. Schema v2 adds a top-level `documents` mapping. Each document owns a profile/type, title and one or more `editions`; an edition selects its source, LaTeX engine and optional output filename. Language codes are edition identifiers rather than document identities.
+
+The build planner validates the entire selected plan before invoking LaTeX. Each v2 artifact is written to `<build.output_dir>/<document-id>/<edition-id>/<output-name>.pdf`, so separate documents and editions cannot overwrite one another. Source and output paths are resolved under the project root, including symlink resolution. The machine-readable `manifest.json` is atomically replaced after a run and records each result, byte size and SHA-256. `px verify` checks PDF structure and verifies size/digest against that manifest.
+
+A v1 project is represented internally as one document with its configured language entries as editions. Its existing `build/<language>/` output layout is retained. This permits the CLI and manifest machinery to be shared without forcing a v1 migration.
+
+See [multi-document configuration and CLI](multi-document.md).

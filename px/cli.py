@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import time
 from pathlib import Path
 
-from .build import BuildError, build_project, clean_project
+from .build import BuildError, clean_project
 from .changelog import generate_changelog
 from .config import ConfigError, load_config
 from .export import ExportError, export_project
 from .logger import close_all, get_logger, log, native_logger_available
 from .process import CommandError, run_checked
+from .project import build_documents, clean_document, list_documents, verify_manifest
 from .tags import generate_tags
 
 
@@ -22,15 +22,21 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     init = commands.add_parser("init", help="create a project configuration and a basic source")
-    init.add_argument("--type", default="book", choices=("book", "booklet", "article", "cv"))
+    init.add_argument("--type", default="book", choices=("book", "booklet", "article", "cv", "collection"))
     init.add_argument("--language", default="en", choices=("en", "fa", "both"))
     init.add_argument("--force", action="store_true")
 
-    build = commands.add_parser("build", help="build configured language editions")
-    build.add_argument("--language", action="append", default=[])
+    build = commands.add_parser("build", help="build all documents or a selected document")
+    build.add_argument("document_id", nargs="?", help="optional document id")
+    build.add_argument("--edition", help="optional edition id")
+    build.add_argument("--language", action="append", default=[], help="v1-compatible edition selector")
     build.add_argument("--dry-run", action="store_true")
-
-    commands.add_parser("clean", help="remove only the configured generated output")
+    build.add_argument("--keep-going", action="store_true")
+    list_cmd = commands.add_parser("list", help="list documents, editions and build status")
+    list_cmd.add_argument("--json", action="store_true")
+    clean = commands.add_parser("clean", help="remove generated output")
+    clean.add_argument("document_id", nargs="?")
+    commands.add_parser("verify", help="verify build manifest and generated PDFs")
     watch = commands.add_parser("watch", help="rebuild when source files change")
     watch.add_argument("--interval", type=float, default=1.5)
 
@@ -136,27 +142,57 @@ def _init(root: Path, kind: str, language: str, force: bool) -> Path:
             continue
         path.write_text(content, encoding="utf-8")
 
-    cfg = {
-        "schema_version": 1,
-        "project": {
-            "name": root.name.lower().replace(" ", "-"),
-            "type": kind,
-            "title": title,
-            "author": "Your Name",
-            "languages": languages,
-        },
-        "build": {
-            "output_dir": "build",
-            "default_engine": "xelatex",
-            "timeout_seconds": 1800,
-            "entries": entries,
-        },
-        "export": {
-            "output_dir": "build/export",
-            "targets": ["devto"],
-            "tag_limit": 5,
-        },
-    }
+    project_name = root.name.lower().replace(" ", "-")
+    if kind == "collection":
+        cfg = {
+            "schema_version": 2,
+            "project": {
+                "name": project_name,
+                "type": "collection",
+                "title": title,
+                "author": "Your Name",
+                "languages": languages,
+            },
+            "build": {
+                "output_dir": "build",
+                "default_engine": "xelatex",
+                "timeout_seconds": 1800,
+            },
+            "documents": {
+                "first-article": {
+                    "type": "article",
+                    "title": title,
+                    "editions": entries,
+                }
+            },
+            "export": {
+                "output_dir": "build/export",
+                "targets": ["devto"],
+                "tag_limit": 5,
+            },
+        }
+    else:
+        cfg = {
+            "schema_version": 1,
+            "project": {
+                "name": project_name,
+                "type": kind,
+                "title": title,
+                "author": "Your Name",
+                "languages": languages,
+            },
+            "build": {
+                "output_dir": "build",
+                "default_engine": "xelatex",
+                "timeout_seconds": 1800,
+                "entries": entries,
+            },
+            "export": {
+                "output_dir": "build/export",
+                "targets": ["devto"],
+                "tag_limit": 5,
+            },
+        }
     config_path.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False), encoding="utf-8")
     makefile = root / "Makefile"
     if not makefile.exists():
@@ -206,10 +242,33 @@ def main(argv: list[str] | None = None) -> int:
 
         config = load_config(root, args.config)
         if args.command == "build":
-            build_project(root, config, args.language, dry_run=args.dry_run)
+            selected_edition = args.edition
+            if args.language:
+                if selected_edition:
+                    raise ValueError("use either --edition or --language, not both")
+                selected_edition = args.language[0] if len(args.language) == 1 else args.language
+            build_documents(root, config, args.document_id, selected_edition,
+                            dry_run=args.dry_run, keep_going=args.keep_going)
+            return 0
+        if args.command == "list":
+            import json
+            rows = list_documents(root, config)
+            if args.json:
+                print(json.dumps(rows, ensure_ascii=False, sort_keys=True, indent=2))
+            else:
+                for row in rows:
+                    print(f"{row['document_id']:<18} {row['edition']:<10} {row['status']:<12} {row['source']}")
+            return 0
+        if args.command == "verify":
+            result = verify_manifest(root, config)
+            log("info", f"Verified {result['checked']} PDF artifact(s) from {result['manifest']}",
+                component="verify", status="ok")
             return 0
         if args.command == "clean":
-            clean_project(root, config)
+            if args.document_id:
+                clean_document(root, config, args.document_id)
+            else:
+                clean_project(root, config)
             return 0
         if args.command == "export":
             outputs = export_project(root, config, args.target)
@@ -240,19 +299,26 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "watch":
             def snapshot() -> dict[Path, int]:
                 result = {}
-                for raw in config["build"]["entries"].values():
-                    source = root / (raw if isinstance(raw, str) else raw["source"])
+                if config["schema_version"] == 2:
+                    from .project import _documents
+                    entries = (edition for doc in _documents(config).values()
+                               for edition in doc["editions"].values())
+                    sources = (root / entry["source"] for entry in entries)
+                else:
+                    sources = (root / (raw if isinstance(raw, str) else raw["source"])
+                               for raw in config["build"]["entries"].values())
+                for source in sources:
                     if source.exists():
                         result[source] = source.stat().st_mtime_ns
                 return result
-            build_project(root, config)
+            build_documents(root, config, keep_going=True)
             previous = snapshot()
             log("info", "Watching configured LaTeX sources; press Ctrl+C to stop", component="watch")
             while True:
                 time.sleep(max(0.2, args.interval))
                 current = snapshot()
                 if current != previous:
-                    build_project(root, config)
+                    build_documents(root, config, keep_going=True)
                     previous = snapshot()
         return 0
     except (ConfigError, BuildError, ExportError, CommandError, OSError, ValueError) as exc:

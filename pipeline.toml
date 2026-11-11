@@ -10,7 +10,7 @@ fail_fast = true
 
 [tasks.compile]
 description = "Compile the shared Python workspace package"
-command = ["python", "-m", "compileall", "-q", "px"]
+command = ["python", "-m", "compileall", "-q", "px", "scripts"]
 
 [tasks.test]
 description = "Run configuration, scaffold and tooling tests"
@@ -25,7 +25,7 @@ depends_on = ["test"]
 [tasks.check]
 description = "Run the complete workspace verification sequence"
 command = ["python", "-c", "print('Workspace checks passed')"]
-depends_on = ["quality"]
+depends_on = ["quality", "package-smoke"]
 
 [ci]
 language = "python"
@@ -35,3 +35,13 @@ skip = ["install"]
 source = "px"
 tests = "tests"
 runner = "unittest"
+
+[tasks.docker-smoke]
+description = "Build the container image and exercise its CLI and example project"
+command = ["bash", "scripts/docker-smoke.sh"]
+depends_on = ["test"]
+
+[tasks.package-smoke]
+description = "Build wheel and sdist, create the release bundle, install the wheel in a clean venv and smoke-test it"
+command = ["bash", "scripts/package-smoke.sh"]
+depends_on = ["test"]
