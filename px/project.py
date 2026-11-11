@@ -81,6 +81,20 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             source = _inside(base, raw["source"], f"{doc_id}/{edition_id}.source")
             if not source.is_file():
                 raise BuildError(f"{doc_id}/{edition_id}: source file does not exist: {source}")
+            working_directory = _inside(
+                base, raw.get("working_directory", "."),
+                f"{doc_id}/{edition_id}.working_directory"
+            )
+            _reject_symlink_components(
+                base,
+                raw.get("working_directory", "."),
+                f"{doc_id}/{edition_id}.working_directory"
+            )
+            if not working_directory.is_dir():
+                raise BuildError(
+                    f"{doc_id}/{edition_id}: working_directory does not exist or is not a directory: "
+                    f"{working_directory}"
+                )
             engine = raw.get("engine", config["build"].get("default_engine", "xelatex"))
             if engine not in _ENGINES:
                 raise BuildError(f"{doc_id}/{edition_id}: unsupported LaTeX engine {engine!r}")
@@ -105,8 +119,8 @@ def plan_documents(root: str | Path, config: dict[str, Any], document_id: str | 
             plan.append({
                 "document_id": doc_id, "document_type": document.get("type", config["project"]["type"]),
                 "title": document.get("title", doc_id), "edition": edition_id,
-                "source": source, "engine": engine, "output_dir": output_dir,
-                "output": destination,
+                "source": source, "engine": engine, "working_directory": working_directory,
+                "output_dir": output_dir, "output": destination,
             })
     missing_editions = requested_editions - seen_editions
     if missing_editions:
@@ -196,6 +210,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
         record = {k: item[k] for k in ("document_id", "document_type", "title", "edition", "engine")}
         record.update(source=item["source"].relative_to(base).as_posix(),
                       source_sha256=_sha256(item["source"]),
+                      working_directory=item["working_directory"].relative_to(base).as_posix(),
                       output=item["output"].relative_to(base).as_posix(), status="planned")
         if dry_run:
             records.append(record)
@@ -204,7 +219,7 @@ def build_documents(root: str | Path, config: dict[str, Any], document_id: str |
         try:
             item["output_dir"].mkdir(parents=True, exist_ok=True)
             env = {"TEXINPUTS": tex_inputs(base, item["source"])}
-            run_checked(command, cwd=base, env=env,
+            run_checked(command, cwd=item["working_directory"], env=env,
                         timeout=int(config["build"].get("timeout_seconds", 1800)))
             if not valid_pdf(item["output"]):
                 raise BuildError(f"{key}: compiler completed but PDF is missing or invalid")
@@ -333,16 +348,25 @@ def verify_manifest(root: str | Path, config: dict[str, Any]) -> dict[str, Any]:
     return {"checked": checked, "manifest": manifest_path.relative_to(base).as_posix()}
 
 
-def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -> None:
-    """Remove one v2 document's generated outputs and reconcile the manifest."""
+def clean_document(root: str | Path, config: dict[str, Any], document_id: str,
+                   edition: str | None = None) -> None:
+    """Remove one v2 document, or one of its editions, and reconcile the manifest."""
     if config.get("schema_version") != 2:
         raise BuildError("selective clean requires schema_version 2")
     base = Path(root).expanduser().resolve()
     documents = _documents(config)
     if document_id not in documents:
         raise BuildError(f"unknown document {document_id!r}; run px list")
+    configured_editions = documents[document_id]["editions"]
+    if edition is not None and edition not in configured_editions:
+        raise BuildError(
+            f"unknown edition {edition!r} for {document_id}; "
+            f"configured editions: {', '.join(configured_editions)}"
+        )
     output_relative = config["build"].get("output_dir", "build")
     target_relative = Path(output_relative) / document_id
+    if edition is not None:
+        target_relative /= edition
     _reject_symlink_components(base, output_relative, "build.output_dir")
     _reject_symlink_components(base, target_relative, "clean target")
     output_root = _inside(base, output_relative, "build.output_dir")
@@ -368,10 +392,22 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
             raise BuildError(f"refusing to remove non-directory build output: {target}")
         shutil.rmtree(target)
     if manifest is not None:
-        manifest["results"] = [r for r in manifest.get("results", []) if r.get("document_id") != document_id]
-        expected_remaining = sum(len(doc["editions"]) for key, doc in documents.items() if key != document_id)
-        completed = sum(r.get("status") == "success" for r in manifest["results"])
-        failed = sum(r.get("status") == "failed" for r in manifest["results"])
+        manifest["results"] = [
+            row for row in manifest.get("results", [])
+            if not (
+                row.get("document_id") == document_id
+                and (edition is None or row.get("edition") == edition)
+            )
+        ]
+        expected_remaining = sum(
+            len(document["editions"])
+            for key, document in documents.items()
+            if key != document_id
+        )
+        if edition is not None:
+            expected_remaining += len(configured_editions) - 1
+        completed = sum(row.get("status") == "success" for row in manifest["results"])
+        failed = sum(row.get("status") == "failed" for row in manifest["results"])
         manifest["summary"] = {
             "planned": expected_remaining,
             "attempted": len(manifest["results"]),
@@ -381,4 +417,6 @@ def clean_document(root: str | Path, config: dict[str, Any], document_id: str) -
             "dry_run": False,
         }
         _write_manifest(manifest_path, manifest)
-    log("info", f"Removed generated output for {document_id}", component="clean", status="ok")
+    label = f"{document_id}/{edition}" if edition is not None else document_id
+    log("info", f"Removed generated output for {label}", component="clean", status="ok")
+

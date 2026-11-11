@@ -68,6 +68,43 @@ documents:
             targets = [x["output"] for x in plan if x["document_id"] in {"paper-a", "paper-b"}]
             self.assertEqual(len(set(targets)), 2)
 
+    def test_edition_working_directory_is_resolved_and_passed_to_compiler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            config["documents"]["paper-a"]["editions"]["en"]["working_directory"] = "papers"
+            plan = plan_documents(root, config, "paper-a", "en")
+            self.assertEqual(plan[0]["working_directory"], root / "papers")
+
+            observed = {}
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                observed["cwd"] = Path(cwd)
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\\nfixture\\n%%EOF\\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, "paper-a", "en")
+            self.assertEqual(observed["cwd"], root / "papers")
+            import json
+            manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["results"][0]["working_directory"], "papers")
+
+    def test_working_directory_must_stay_inside_project_and_exist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+            edition = config["documents"]["paper-a"]["editions"]["en"]
+            edition["working_directory"] = "../outside"
+            with self.assertRaises(ConfigError):
+                from px.config import validate_config
+                validate_config(config)
+            edition["working_directory"] = "missing"
+            with self.assertRaises(BuildError):
+                plan_documents(root, config, "paper-a", "en")
+
     def test_document_and_edition_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -290,6 +327,32 @@ build:
             path.write_text(source, encoding="utf-8")
             with self.assertRaises(ConfigError):
                 load_config(root)
+
+
+    def test_clean_one_edition_preserves_other_edition_and_manifest_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._project(root)
+
+            def fake_latexmk(command, *, cwd, env, timeout):
+                outdir = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
+                jobname = next(arg.split("=", 1)[1] for arg in command if arg.startswith("-jobname="))
+                outdir.mkdir(parents=True, exist_ok=True)
+                (outdir / f"{jobname}.pdf").write_bytes(b"%PDF-1.7\nfixture\n%%EOF\n")
+
+            with patch("px.project.run_checked", side_effect=fake_latexmk):
+                build_documents(root, config, keep_going=True)
+            from px.project import clean_document
+            clean_document(root, config, "handbook", "fa")
+            self.assertTrue((root / "build/handbook/en/en.pdf").is_file())
+            self.assertFalse((root / "build/handbook/fa/fa.pdf").exists())
+            import json
+            manifest = json.loads((root / "build/manifest.json").read_text(encoding="utf-8"))
+            editions = {(row["document_id"], row["edition"]) for row in manifest["results"]}
+            self.assertIn(("handbook", "en"), editions)
+            self.assertNotIn(("handbook", "fa"), editions)
+            self.assertEqual(manifest["summary"]["planned"], 3)
+
 
 
 if __name__ == "__main__":

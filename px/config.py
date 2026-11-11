@@ -53,6 +53,8 @@ def _validate_edition(edition: Any, label: str, default_engine: str) -> None:
     if not isinstance(edition, Mapping):
         raise ConfigError(f"{label} must be a mapping")
     _safe_relative(edition.get("source"), f"{label}.source")
+    if "working_directory" in edition:
+        _safe_relative(edition.get("working_directory"), f"{label}.working_directory")
     engine = edition.get("engine", default_engine)
     if engine not in ENGINES:
         raise ConfigError(f"{label}.engine must be one of: {', '.join(sorted(ENGINES))}")

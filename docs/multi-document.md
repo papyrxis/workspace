@@ -54,6 +54,7 @@ documents:
     editions:
       en:
         source: books/volume-01.tex
+        working_directory: books
         engine: pdflatex
         output_name: volume-01
 
@@ -76,6 +77,7 @@ px build booklet --edition fa
 px build volume-01 --edition en --dry-run
 px verify
 px clean volume-01
+px clean bilingual-handbook --edition fa
 px clean
 ~~~
 
@@ -85,7 +87,7 @@ The existing `px build --language en` option remains as a v1-compatible alias fo
 - `px build` builds all declared documents and editions.
 - `px build <document-id>` builds one document.
 - `px build <document-id> --edition <edition-id>` builds one edition.
-- `px clean <document-id>` removes only that document's generated output.
+- `px clean <document-id>` removes all editions of that document; add `--edition <edition-id>` to remove only one edition and keep the other editions intact.
 - `px verify` validates every successful PDF recorded in the build manifest.
 
 ## Output and manifest
@@ -103,6 +105,8 @@ build/
 │   └── en/volume-01.pdf
 └── manifest.json
 ~~~
+
+An edition's optional `working_directory` is relative to the project root and controls the process directory used by the TeX engine. It is useful when a nested entry point uses relative `\\input`, bibliography or figure paths. It defaults to the project root for backward compatibility; it must exist and stay inside the project.
 
 The shared Workspace components, document presets and package snippets are included in the installable wheel; the project source directory and project `tex/`/`configs/` overrides are searched before shared resources. The manifest is written atomically and has a stable ordering. Successful result records contain document ID/type/title, edition, source, selected engine, output path, byte size, and SHA-256. Failed editions contain a failure status and diagnostic message. The summary records planned/completed/failed counts and whether the command was a dry run.
 

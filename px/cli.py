@@ -38,6 +38,7 @@ def _parser() -> argparse.ArgumentParser:
     list_cmd.add_argument("--json", action="store_true")
     clean = commands.add_parser("clean", help="remove generated output")
     clean.add_argument("document_id", nargs="?")
+    clean.add_argument("--edition", help="optional edition id when cleaning one v2 document")
     commands.add_parser("verify", help="verify build manifest and generated PDFs")
     watch = commands.add_parser("watch", help="rebuild when source files change")
     watch.add_argument("--interval", type=float, default=1.5)
@@ -425,8 +426,10 @@ def main(argv: list[str] | None = None) -> int:
                 component="verify", status="ok")
             return 0
         if args.command == "clean":
+            if args.edition and not args.document_id:
+                raise ValueError("--edition requires a document id")
             if args.document_id:
-                clean_document(root, config, args.document_id)
+                clean_document(root, config, args.document_id, args.edition)
             else:
                 clean_project(root, config)
             return 0
