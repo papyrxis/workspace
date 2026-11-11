@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-12
+
 ### Added
 - Article initialization profiles (`personal`, `academic`, `ieee`, and `technical`) with abstract, keywords, sections, and bibliography scaffolding.
 - Complete book and compact booklet starter structures with front matter, chapters, and back matter.
+- Per-edition working directories for nested LaTeX sources and independent edition cleanup.
+
+### Changed
+- Consolidated multi-document publishing and installed-package resource handling for reusable Workspace projects.
 
 ### Fixed
 - Prevent cleanup from removing configured LaTeX source files and detect case-insensitive artifact path collisions before compilation.
+- Preserve sibling edition artifacts when cleaning one edition.
 
 ## [0.4.0] - 2026-11-11
 
