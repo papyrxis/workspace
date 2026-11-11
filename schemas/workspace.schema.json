@@ -18,6 +18,12 @@
         "tags": {"type": "array", "items": {"type": "string"}},
         "keywords": {"type": "array", "items": {"type": "string"}}
       },
+      "allOf": [
+        {
+          "if": {"properties": {"type": {"const": "article"}}},
+          "else": {"not": {"required": ["style"]}}
+        }
+      ],
       "additionalProperties": true
     },
     "build": {
@@ -61,6 +67,12 @@
           }
         },
         "required": ["type", "editions"],
+        "allOf": [
+          {
+            "if": {"properties": {"type": {"const": "article"}}},
+            "else": {"not": {"required": ["style"]}}
+          }
+        ],
         "additionalProperties": true
       }
     },
