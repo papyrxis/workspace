@@ -26,6 +26,7 @@ def tex_inputs(project_root: str | Path, source: str | Path) -> str:
     shared = common_root()
     directories = [
         source_path.parent,
+        root,
         root / "tex",
         root / "configs",
         shared.parent,
